@@ -6,7 +6,6 @@ import { errorHandler } from './middleware/errorHandler';
 import { logger } from './middleware/logger';
 import { routes } from './routes/index';
 import { connectDatabase } from './config/database';
-import cronScheduler from './services/cronScheduler';
 
 dotenv.config();                              
 
@@ -17,7 +16,7 @@ const httpServer = createServer(app);
 
 connectDatabase();
 
-cronScheduler.start();
+// cronScheduler.start();
 
 app.use(cors());
 app.use(express.json());
