@@ -1,0 +1,19 @@
+{
+  "watch": [
+    "controllers",
+    "models",
+    "middleware",
+    "config",
+    "routes"
+  ],
+  "ext": "ts,json",
+  "ignore": [
+    "**/*.spec.ts",
+    "node_modules",
+    "dist"
+  ],
+  "exec": "ts-node index.ts",
+  "env": {
+    "NODE_ENV": "development"
+  }
+}
