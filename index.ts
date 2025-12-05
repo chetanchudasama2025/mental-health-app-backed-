@@ -16,8 +16,6 @@ const httpServer = createServer(app);
 
 connectDatabase();
 
-// cronScheduler.start();
-
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
