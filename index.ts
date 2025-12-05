@@ -6,7 +6,6 @@ import {errorHandler} from './middleware/errorHandler';
 import {logger} from './middleware/logger';
 import {routes} from './routes/index';
 import {connectDatabase} from './config/database';
-import cronScheduler from "./services/cronScheduler";
 
 dotenv.config();                              
                   
@@ -16,8 +15,6 @@ const PORT = process.env.PORT || 3000;
 const httpServer = createServer(app);
 
 connectDatabase();
-
-cronScheduler.start();
 
 app.use(cors());
 app.use(express.json());
@@ -33,9 +30,11 @@ app.get('/health', (_req, res) => {
 
 app.use(errorHandler);
 
-httpServer.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+if (!process.env.VERCEL) {
+  httpServer.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+}
 
 export default app;
 
