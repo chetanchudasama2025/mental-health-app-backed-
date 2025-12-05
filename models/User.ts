@@ -4,25 +4,37 @@ import mongoose from "mongoose";
 export interface IUser extends Document {
   firstName: string;
   lastName: string;
+  profilePhoto?: string | null;
+  role:
+  | "admin"
+  | "therapist"
+  | "patient"
+  | "superAdmin"
+  | "therapistManager"
+  | "supportAgent"
+  | "contentModerator";
+  therapist?: mongoose.Types.ObjectId | null;
   email: string;
+  emailVerified: boolean;
+  googleId?: string | null;
   phone: {
-    countryCode: string;
-    number: string;
+    countryCode?: string;
+    number?: string;
     verified: boolean;
   };
-  emailVerified: boolean;
-  dateOfBirth: Date;
-  gender: "male" | "female" | "other";
-  country: string;
-  timezone: string;
-  password: string;
-  role: "admin" | "therapist" | "patient";
-  therapist?: mongoose.Types.ObjectId;
-  tokenVersion: number;
+  password?: string;
+  status: "active" | "inactive" | "pending" | "blocked" | "suspended";
+  dateOfBirth?: Date;
+  gender?: "male" | "female" | "other";
+  country?: string;
+  timezone?: string;
+  privacyPolicyAccepted?: boolean;
+  termsOfServiceAccepted?: boolean;
   isRemember: boolean;
-  deletedAt?: Date | null;
+  tokenVersion: number;
+  refreshToken?: string | null;
   accountDeletionReason?: string | null;
-  googleId?: string;
+  deletedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -38,6 +50,21 @@ const UserSchema = new Schema<IUser>(
       type: String,
       required: true,
       trim: true,
+    },
+    profilePhoto: {
+      type: String,
+      default: null,
+    },
+    role: {
+      type: String,
+      enum: ["admin", "therapist", "patient", "superAdmin", "therapistManager", "supportAgent", "contentModerator"],
+      default: "patient",
+      required: true,
+    },
+    therapist: {
+      type: Schema.Types.ObjectId,
+      ref: "Therapist",
+      default: null,
     },
     email: {
       type: String,
@@ -63,6 +90,15 @@ const UserSchema = new Schema<IUser>(
         default: false,
       },
     },
+    password: {
+      type: String,
+      minlength: 6,
+    },
+    status: {
+      type: String,
+      enum: ["active", "inactive", "pending", "blocked", "suspended"],
+      default: "active",
+    },
     dateOfBirth: {
       type: Date,
     },
@@ -76,37 +112,34 @@ const UserSchema = new Schema<IUser>(
     timezone: {
       type: String,
     },
-    password: {
-      type: String,
-      minlength: 6,
+    privacyPolicyAccepted: {
+      type: Boolean,
+      default: false,
     },
-    role: {
-      type: String,
-      enum: ["admin", "therapist", "patient"],
-      default: "patient",
-      required: true,
-    },
-    therapist: {
-      type: Schema.Types.ObjectId,
-      ref: "Therapist",
-      default: null,
-    },
-    tokenVersion: {
-      type: Number,
-      default: 0,
+    termsOfServiceAccepted: {
+      type: Boolean,
+      default: false,
     },
     isRemember: {
       type: Boolean,
       default: false,
     },
-    deletedAt: {
-      type: Date,
+    tokenVersion: {
+      type: Number,
+      default: 0,
+    },
+    refreshToken: {
+      type: String,
       default: null,
     },
     accountDeletionReason: {
       type: String,
       default: null,
       trim: true,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
     },
   },
   {

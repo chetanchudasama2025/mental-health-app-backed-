@@ -8,13 +8,14 @@ import { defineAbilitiesFor, AppAbility } from '../config/abilities';
 export interface AuthRequest extends Request {
   user?: {
     _id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    role: 'admin' | 'therapist' | 'patient';
-    therapist?: mongoose.Types.ObjectId;
+    email: IUser["email"];
+    firstName: IUser["firstName"];
+    lastName: IUser["lastName"];
+    role: IUser["role"];
+    therapist: IUser["therapist"];
   };
   ability?: AppAbility;
+
   files?: {
     [fieldname: string]: any[] | any;
   };

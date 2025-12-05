@@ -22,7 +22,7 @@ class BackupService {
   private initializeGoogleDrive(): void {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    const redirectUri = process.env.GOOGLE_REDIRECT_URI || 'urn:ietf:wg:oauth:2.0:oob';
+    const redirectUri = process.env.GOOGLE_REDIRECT_URL || 'urn:ietf:wg:oauth:2.0:oob';
     const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
 
     if (!clientId || !clientSecret || !refreshToken) {

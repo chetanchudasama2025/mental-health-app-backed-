@@ -21,6 +21,7 @@ dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '30d';
 
 interface GoogleTokenResponse {
   access_token: string;
@@ -67,6 +68,18 @@ const generateToken = (userId: string, tokenVersion: number): string => {
   );
 };
 
+const generateRefreshToken = (userId: string, tokenVersion: number): string => {
+  const secret = JWT_SECRET;
+  if (!secret) {
+    throw new Error('JWT_SECRET is not defined');
+  }
+  return jwt.sign(
+    { userId, tokenVersion, type: 'refresh' },
+    secret,
+    { expiresIn: JWT_REFRESH_EXPIRES_IN } as jwt.SignOptions
+  );
+};
+
 const generateOTP = (): string => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
@@ -86,14 +99,14 @@ function generateChallenge(verifier: string) {
 const pkceStore = new Map<string, { verifier: string; expires: number }>();
 
 // Send email verification OTP
-const sendVerificationEmail = async (user: any, otp: string): Promise<void> => {
+const sendVerificationEmail = async (email: string, otp: string): Promise<void> => {
   try {
     const transporter = createTransporter();
-    const verificationEmailHtml = getEmailVerificationEmailTemplate(user.firstName, otp);
+    const verificationEmailHtml = getEmailVerificationEmailTemplate("User", otp);
 
     await transporter.sendMail({
       from: process.env.GMAIL_USER || 'yourEmail@gmail.com',
-      to: user.email,
+      to: email,
       subject: 'Verify Your Email Address - Mental Health App',
       html: verificationEmailHtml,
     });
@@ -124,6 +137,8 @@ export const register = async (
       password: encryptedPassword,
       role,
       emailVerified,
+      privacyPolicyAccepted,
+      termsOfServiceAccepted,
     } = req.body;
 
     let password: string;
@@ -142,8 +157,10 @@ export const register = async (
       !email ||
       !phone?.countryCode ||
       !phone?.number ||
-      !emailVerified ||
-      !phone?.verified ||
+      emailVerified === undefined ||
+      emailVerified === null ||
+      phone?.verified === undefined ||
+      phone?.verified === null ||
       !dateOfBirth ||
       !gender ||
       !country ||
@@ -155,8 +172,9 @@ export const register = async (
       throw error;
     }
 
-    if (role && !["admin", "therapist", "patient"].includes(role)) {
-      const error: CustomError = new Error('Invalid role. Role must be one of: admin, therapist, patient');
+    const validRoles = ["admin", "therapist", "patient", "superAdmin", "therapistManager", "supportAgent", "contentModerator"];
+    if (role && !validRoles.includes(role)) {
+      const error: CustomError = new Error('Invalid role. Role must be one of: admin, therapist, patient, superAdmin, therapistManager, supportAgent, contentModerator');
       error.statusCode = 400;
       throw error;
     }
@@ -182,6 +200,9 @@ export const register = async (
       timezone,
       password: hashedPassword,
       emailVerified,
+      privacyPolicyAccepted: privacyPolicyAccepted || false,
+      termsOfServiceAccepted: termsOfServiceAccepted || false,
+      status: "pending",
       ...(role && { role }),
     });
 
@@ -192,21 +213,18 @@ export const register = async (
     const userRole = role || 'patient';
 
     if (userRole === 'therapist') {
-      const phoneString = phone.countryCode && phone.number
-        ? `${phone.countryCode}${phone.number}`
-        : undefined;
-
       const therapist = new Therapist({
         user: user._id,
         firstName,
         lastName,
         email: email.toLowerCase(),
-        phone: phoneString,
+        emailVerified: emailVerified || false,
+        phone: phone,
+        status: "pending",
         dateOfBirth,
         gender,
-        emailVerified,
         country,
-        isVerified: false,
+        timezone,
       });
 
       await therapist.save();
@@ -220,6 +238,14 @@ export const register = async (
       user.tokenVersion
     );
 
+    const refreshToken = generateRefreshToken(
+      (user._id as mongoose.Types.ObjectId).toString(),
+      user.tokenVersion
+    );
+
+    user.refreshToken = refreshToken;
+    await user.save();
+
     const userResponse = user.toObject();
     const { password: _, ...userWithoutPassword } = userResponse;
 
@@ -229,6 +255,7 @@ export const register = async (
       data: {
         user: userWithoutPassword,
         token,
+        refreshToken,
         emailVerified: false,
       },
     });
@@ -291,14 +318,12 @@ export const login = async (
       throw error;
     }
 
-    // Check if user has a password (OAuth users might not have passwords)
     if (!user.password) {
       const error: CustomError = new Error('This account was created with social login. Please use social login to sign in.');
       error.statusCode = 401;
       throw error;
     }
 
-    // Validate that both password and user.password are valid strings before comparing
     if (typeof password !== 'string' || password.length === 0) {
       const error: CustomError = new Error('Invalid password format');
       error.statusCode = 400;
@@ -320,6 +345,13 @@ export const login = async (
 
     user.isRemember = rememberMe ?? false;
     user.tokenVersion = (user.tokenVersion || 0) + 1;
+
+    const refreshToken = generateRefreshToken(
+      (user._id as mongoose.Types.ObjectId).toString(),
+      user.tokenVersion
+    );
+
+    user.refreshToken = refreshToken;
     await user.save();
 
     const token = generateToken(
@@ -336,6 +368,7 @@ export const login = async (
       data: {
         user: userWithoutPassword,
         token,
+        refreshToken,
       },
     });
   } catch (error) {
@@ -563,13 +596,6 @@ export const sendVerificationEmailAPI = async (
       throw error;
     }
 
-    const user = await User.findOne({ email: email.toLowerCase(), deletedAt: null });
-    if (!user) {
-      const error: CustomError = new Error('User not found');
-      error.statusCode = 404;
-      throw error;
-    }
-
     const otp = generateOTP();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
@@ -586,7 +612,7 @@ export const sendVerificationEmailAPI = async (
     );
 
     try {
-      await sendVerificationEmail(user, otp);
+      await sendVerificationEmail(email, otp);
       res.status(200).json({
         success: true,
         message: 'Verification email sent successfully',
@@ -626,13 +652,6 @@ export const resendVerificationEmail = async (
       throw error;
     }
 
-    const user = await User.findOne({ email: email.toLowerCase(), deletedAt: null });
-    if (!user) {
-      const error: CustomError = new Error('User not found');
-      error.statusCode = 404;
-      throw error;
-    }
-
     const otp = generateOTP();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
@@ -649,7 +668,7 @@ export const resendVerificationEmail = async (
     );
 
     try {
-      await sendVerificationEmail(user, otp);
+      await sendVerificationEmail(email, otp);
       res.status(200).json({
         success: true,
         message: 'Verification email sent successfully',
@@ -709,7 +728,16 @@ export const changePassword = async (
       throw error;
     }
 
+    if (!user.password || typeof user.password !== "string") {
+      const error: CustomError = new Error(
+        'User does not have a password set. Please set a password first.'
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
     const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
+
     if (!isOldPasswordValid) {
       const error: CustomError = new Error('Old password is incorrect');
       error.statusCode = 401;
@@ -721,12 +749,90 @@ export const changePassword = async (
 
     user.password = hashedPassword;
     user.tokenVersion = (user.tokenVersion || 0) + 1;
+    user.refreshToken = null;
     await user.save();
 
     res.status(200).json({
       success: true,
       message: 'Password changed successfully',
     });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Add password (for users who registered with Google/OAuth)
+export const addPassword = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const userId = req.user?._id;
+    const { password: encryptedPassword } = req.body;
+
+    if (!userId) {
+      const error: CustomError = new Error('Unauthorized: User ID missing');
+      error.statusCode = 401;
+      throw error;
+    }
+
+    if (!encryptedPassword) {
+      const error: CustomError = new Error('Password is required');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    let password: string;
+
+    try {
+      password = decrypt(encryptedPassword);
+    } catch (decryptError) {
+      const error: CustomError = new Error('Failed to decrypt password. Invalid encryption.');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (!password || password.trim() === '') {
+      const error: CustomError = new Error('Password is required');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (password.length < 6) {
+      const error: CustomError = new Error('Password must be at least 6 characters long');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const user = await User.findOne({ _id: userId, deletedAt: null });
+    if (!user) {
+      const error: CustomError = new Error('User not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (user.password && typeof user.password === "string" && user.password.length > 0) {
+      const error: CustomError = new Error(
+        'User already has a password set. Please use change-password endpoint to update it.'
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    user.password = hashedPassword;
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Password added successfully',
+    });
+
   } catch (error) {
     next(error);
   }
@@ -945,17 +1051,103 @@ export const resendVerificationPhone = async (
   }
 };
 
+// Refresh token
+export const refreshToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { refreshToken: providedRefreshToken } = req.body;
+
+    if (!providedRefreshToken) {
+      const error: CustomError = new Error('Refresh token is required');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    let decoded: any;
+    try {
+      decoded = jwt.verify(providedRefreshToken, JWT_SECRET);
+    } catch (err) {
+      const error: CustomError = new Error('Invalid or expired refresh token');
+      error.statusCode = 401;
+      throw error;
+    }
+
+    if (decoded.type !== 'refresh') {
+      const error: CustomError = new Error('Invalid token type');
+      error.statusCode = 401;
+      throw error;
+    }
+
+    const user = await User.findOne({
+      _id: decoded.userId,
+      deletedAt: null
+    });
+
+    if (!user) {
+      const error: CustomError = new Error('User not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (user.refreshToken !== providedRefreshToken) {
+      const error: CustomError = new Error('Invalid refresh token');
+      error.statusCode = 401;
+      throw error;
+    }
+
+    const currentTokenVersion = user.tokenVersion || 0;
+    const tokenVersion = decoded.tokenVersion ?? 0;
+    if (tokenVersion !== currentTokenVersion) {
+      user.refreshToken = null;
+      await user.save();
+      const error: CustomError = new Error('Refresh token has been invalidated. Please login again.');
+      error.statusCode = 401;
+      throw error;
+    }
+
+    const newToken = generateToken(
+      (user._id as mongoose.Types.ObjectId).toString(),
+      user.tokenVersion
+    );
+
+    const newRefreshToken = generateRefreshToken(
+      (user._id as mongoose.Types.ObjectId).toString(),
+      user.tokenVersion
+    );
+
+    user.refreshToken = newRefreshToken;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Token refreshed successfully',
+      data: {
+        token: newToken,
+        refreshToken: newRefreshToken,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // Google OAuth2 authentication
-export const googleAuth = async (req: Request, res: Response): Promise<void> => {
+export const googleAuth = async (req: Request, res: Response): Promise<Response | void> => {
+  if (!process.env.REDIRECT_URL) {
+    console.error("❌ REDIRECT_URL is missing in .env");
+    return res.status(500).send("Server configuration error: Missing redirect URL");
+  }
+
   const role = req.query.role as string;
 
   if (!role) {
-    res.status(400).json({ message: "Role is required (patient | therapist)" });
-    return;
+    return res.status(400).json({ message: "Role is required (patient | therapist)" });
   }
 
-  const stateObj = { role };
-  const state = Buffer.from(JSON.stringify(stateObj)).toString("base64");
+  const state = Buffer.from(JSON.stringify({ role })).toString("base64");
 
   const verifier = generateVerifier();
   const challenge = generateChallenge(verifier);
@@ -964,7 +1156,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
 
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID!,
-    redirect_uri: process.env.REDIRECT_URI!,
+    redirect_uri: process.env.REDIRECT_URL!,
     response_type: "code",
     scope: "openid email profile",
     code_challenge: challenge,
@@ -973,6 +1165,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<void> => 
   });
 
   params.append("prompt", "select_account");
+
   res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
 };
 
@@ -994,10 +1187,10 @@ export const googleCallback = async (
     const stateDecoded = JSON.parse(Buffer.from(state, "base64").toString());
     const roleFromState = stateDecoded.role as "patient" | "therapist" | undefined;
 
-    const data = pkceStore.get(state);
+    const session = pkceStore.get(state);
     pkceStore.delete(state);
 
-    if (!data) {
+    if (!session) {
       res.status(400).send("Session expired");
       return;
     }
@@ -1009,10 +1202,10 @@ export const googleCallback = async (
         client_id: process.env.GOOGLE_CLIENT_ID!,
         client_secret: process.env.GOOGLE_CLIENT_SECRET!,
         code,
-        code_verifier: data.verifier,
+        code_verifier: session.verifier,
         grant_type: "authorization_code",
-        redirect_uri: process.env.REDIRECT_URI!,
-      })
+        redirect_uri: process.env.REDIRECT_URL!,
+      }),
     });
 
     const tokens = (await tokenRes.json()) as GoogleTokenResponse;
@@ -1022,7 +1215,7 @@ export const googleCallback = async (
     }
 
     const profileRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
-      headers: { Authorization: `Bearer ${tokens.access_token}` }
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
     });
 
     const profile = (await profileRes.json()) as GoogleProfile;
@@ -1031,6 +1224,7 @@ export const googleCallback = async (
       throw new Error("Failed to retrieve email from Google profile");
     }
 
+    const googleId = profile.id;
     const email = profile.email.toLowerCase();
     const firstName = profile.given_name || "";
     const lastName = profile.family_name || "";
@@ -1047,14 +1241,15 @@ export const googleCallback = async (
         firstName,
         lastName,
         email,
+        googleId,
+        profilePhoto: picture,
         password: null,
         emailVerified: true,
         role: roleFromState,
-        phone: {
-          countryCode: "",
-          number: "",
-          verified: false,
-        },
+        phone: { countryCode: "", number: "", verified: false },
+        privacyPolicyAccepted: true,
+        termsOfServiceAccepted: true,
+        status: "active",
       });
 
       if (roleFromState === "therapist") {
@@ -1063,15 +1258,29 @@ export const googleCallback = async (
           firstName,
           lastName,
           email,
-          profilePhotoUrl: picture,
+          emailVerified: true,
+          profilePhoto: picture,
+          phone: { countryCode: "", number: "", verified: false },
+          status: "pending",
+          timezone: "UTC",
         });
 
         user.therapist = therapist._id as mongoose.Types.ObjectId;
         await user.save();
       }
+    } else {
+      user.googleId = googleId;
+      if (!user.profilePhoto) user.profilePhoto = picture;
     }
 
     user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+
+    const refreshToken = generateRefreshToken(
+      (user._id as mongoose.Types.ObjectId).toString(),
+      user.tokenVersion
+    );
+
+    user.refreshToken = refreshToken;
     await user.save();
 
     const userId = user._id as mongoose.Types.ObjectId;
@@ -1079,11 +1288,11 @@ export const googleCallback = async (
     const token = generateToken(userId.toString(), user.tokenVersion);
 
     return res.redirect(
-      `${process.env.FRONTEND_URL}/dashboard/home?token=${token}&id=${userId}&role=${user.role}`
+      `${process.env.FRONTEND_URL}/dashboard/home?token=${token}&refreshToken=${refreshToken}&id=${userId}&role=${user.role}`
     );
 
   } catch (err) {
-    console.error(err);
+    console.error("Google OAuth Error →", err);
     next(err);
   }
 };

@@ -24,6 +24,9 @@ export const createUser = async (
       timezone,
       password,
       role,
+      privacyPolicyAccepted,
+      termsOfServiceAccepted,
+      status,
     } = req.body;
 
     if (
@@ -43,8 +46,9 @@ export const createUser = async (
       throw error;
     }
 
-    if (role && !['admin', 'therapist', 'patient'].includes(role)) {
-      const error: CustomError = new Error('Invalid role. Role must be one of: admin, therapist, patient');
+    const validRoles = ['admin', 'therapist', 'patient', 'superAdmin', 'therapistManager', 'supportAgent', 'contentModerator'];
+    if (role && !validRoles.includes(role)) {
+      const error: CustomError = new Error('Invalid role. Role must be one of: admin, therapist, patient, superAdmin, therapistManager, supportAgent, contentModerator');
       error.statusCode = 400;
       throw error;
     }
@@ -59,6 +63,9 @@ export const createUser = async (
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
+    const validStatuses = ['active', 'inactive', 'pending', 'blocked', 'suspended'];
+    const userStatus = status && validStatuses.includes(status) ? status : 'active';
+
     const user = new User({
       firstName,
       lastName,
@@ -70,6 +77,9 @@ export const createUser = async (
       timezone,
       password: hashedPassword,
       role: role || 'patient',
+      privacyPolicyAccepted: privacyPolicyAccepted || false,
+      termsOfServiceAccepted: termsOfServiceAccepted || false,
+      status: userStatus,
     });
 
     user.tokenVersion = 0;
@@ -101,6 +111,7 @@ export const getAllUsers = async (
       role,
       country,
       gender,
+      status,
     } = req.query;
 
     const pageNum = parseInt(page as string, 10);
@@ -127,6 +138,13 @@ export const getAllUsers = async (
 
     if (gender) {
       query.gender = gender;
+    }
+
+    if (status) {
+      const validStatuses = ['active', 'inactive', 'pending', 'blocked', 'suspended'];
+      if (validStatuses.includes(status as string)) {
+        query.status = status;
+      }
     }
 
     const users = await User.find(query)
@@ -291,15 +309,28 @@ export const updateUser = async (
       'gender',
       'country',
       'timezone',
+      'privacyPolicyAccepted',
+      'termsOfServiceAccepted',
     ];
 
     if (currentUser.role === 'admin' && req.body.role !== undefined) {
-      if (!['admin', 'therapist', 'patient'].includes(req.body.role)) {
-        const error: CustomError = new Error('Invalid role');
+      const validRoles = ['admin', 'therapist', 'patient', 'superAdmin', 'therapistManager', 'supportAgent', 'contentModerator'];
+      if (!validRoles.includes(req.body.role)) {
+        const error: CustomError = new Error('Invalid role. Role must be one of: admin, therapist, patient, superAdmin, therapistManager, supportAgent, contentModerator');
         error.statusCode = 400;
         throw error;
       }
       updateData.role = req.body.role;
+    }
+
+    if (currentUser.role === 'admin' && req.body.status !== undefined) {
+      const validStatuses = ['active', 'inactive', 'pending', 'blocked', 'suspended'];
+      if (!validStatuses.includes(req.body.status)) {
+        const error: CustomError = new Error('Invalid status. Status must be one of: active, inactive, pending, blocked, suspended');
+        error.statusCode = 400;
+        throw error;
+      }
+      updateData.status = req.body.status;
     }
 
     allowedFields.forEach((field) => {

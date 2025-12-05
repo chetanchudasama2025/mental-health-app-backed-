@@ -6,6 +6,7 @@ export interface IEducation {
   startYear?: number;
   endYear?: number;
   degreePhoto?: string;
+  status: "valid" | "invalid" | "pending";
 }
 
 export interface ICertification {
@@ -13,6 +14,7 @@ export interface ICertification {
   licenseNumber?: string;
   year?: number;
   certificatePhoto?: string;
+  status: "valid" | "invalid" | "pending";
 }
 
 export interface IExperience {
@@ -22,24 +24,26 @@ export interface IExperience {
   endYear?: number;
   currentlyWorking?: boolean;
   experiencePhoto?: string;
+  status: "valid" | "invalid" | "pending";
 }
 
 export interface ITherapist extends Document {
   user: mongoose.Types.ObjectId;
-  profilePhoto?: string;
   firstName: string;
   lastName: string;
   preferredName?: string;
+  profilePhoto?: string;
   email: string;
   emailVerified: boolean;
   phone?: {
-    countryCode: string;
-    number: string;
+    countryCode?: string;
+    number?: string;
     verified: boolean;
   };
-  timezone: string;
-  dateOfBirth?: Date;
+  status: "approved" | "pending" | "rejected" | "underReview";
   gender?: string;
+  dateOfBirth?: Date;
+  timezone: string;
   city?: string;
   country?: string;
   bio?: string;
@@ -49,8 +53,10 @@ export interface ITherapist extends Document {
   experience: IExperience[];
   specializations: string[];
   languages: string[];
-  isVerified: boolean;
+  reviewNotes?: string;
   deletedAt?: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const EducationSchema = new Schema<IEducation>({
@@ -58,14 +64,24 @@ const EducationSchema = new Schema<IEducation>({
   degree: { type: String, required: true },
   startYear: Number,
   endYear: Number,
-  degreePhoto: String
+  degreePhoto: String,
+  status: {
+    type: String,
+    enum: ["valid", "invalid", "pending"],
+    default: "pending",
+  },
 });
 
 const CertificationSchema = new Schema<ICertification>({
   name: { type: String, required: true },
   licenseNumber: String,
   year: Number,
-  certificatePhoto: String
+  certificatePhoto: String,
+  status: {
+    type: String,
+    enum: ["valid", "invalid", "pending"],
+    default: "pending",
+  },
 });
 
 const ExperienceSchema = new Schema<IExperience>({
@@ -74,7 +90,12 @@ const ExperienceSchema = new Schema<IExperience>({
   startYear: Number,
   endYear: Number,
   currentlyWorking: { type: Boolean, default: false },
-  experiencePhoto: String
+  experiencePhoto: String,
+  status: {
+    type: String,
+    enum: ["valid", "invalid", "pending"],
+    default: "pending",
+  },
 });
 
 const TherapistSchema = new Schema<ITherapist>(
@@ -83,28 +104,29 @@ const TherapistSchema = new Schema<ITherapist>(
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      unique: true
+      unique: true,
     },
-    profilePhoto: String,
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     preferredName: String,
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    emailVerified: {
-      type: Boolean,
-      default: false,
+    profilePhoto: String,
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
     },
+    emailVerified: { type: Boolean, default: false },
     phone: {
-      countryCode: {
-        type: String,
-      },
-      number: {
-        type: String,
-      },
-      verified: {
-        type: Boolean,
-        default: false,
-      },
+      countryCode: String,
+      number: String,
+      verified: { type: Boolean, default: false },
+    },
+    status: {
+      type: String,
+      enum: ["approved", "pending", "rejected", "underReview"],
+      default: "pending",
     },
     dateOfBirth: Date,
     gender: String,
@@ -118,14 +140,10 @@ const TherapistSchema = new Schema<ITherapist>(
     experience: { type: [ExperienceSchema], default: [] },
     specializations: { type: [String], default: [] },
     languages: { type: [String], default: [] },
-    isVerified: { type: Boolean, default: false },
-    deletedAt: {
-      type: Date,
-      default: null,
-    },
+    reviewNotes: String,
+    deletedAt: { type: Date, default: null },
   },
   { timestamps: true }
 );
 
 export default mongoose.model<ITherapist>("Therapist", TherapistSchema);
-

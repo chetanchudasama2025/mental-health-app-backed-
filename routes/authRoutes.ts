@@ -6,6 +6,7 @@ import {
   resetPassword,
   getUser,
   changePassword,
+  addPassword,
   verifyEmail,
   sendVerificationEmailAPI,
   resendVerificationEmail,
@@ -14,6 +15,7 @@ import {
   resendVerificationPhone,
   googleAuth,
   googleCallback,
+  refreshToken,
 } from '../controllers/authController';
 import { authenticate } from '../middleware/authMiddleware';
 
@@ -21,10 +23,12 @@ const router = Router();
 
 router.post('/register', register);
 router.post('/login', login);
+router.post('/refresh-token', refreshToken);
 router.get('/me', authenticate, getUser);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 router.post('/change-password', authenticate, changePassword);
+router.post('/add-password', authenticate, addPassword);
 router.post('/send-verification-email', sendVerificationEmailAPI);
 router.post('/verify-email', verifyEmail);
 router.post('/resend-verification-email', resendVerificationEmail);

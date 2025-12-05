@@ -77,6 +77,7 @@ export const createTherapist = async (
       gender,
       city,
       country,
+      timezone,
       bio,
       videoIntro,
       education,
@@ -84,11 +85,12 @@ export const createTherapist = async (
       experience,
       specializations,
       languages,
-      isVerified,
+      status,
+      emailVerified,
     } = req.body;
 
-    if (!userId || !firstName || !lastName || !email) {
-      const error: CustomError = new Error('userId, firstName, lastName, and email are required');
+    if (!userId || !firstName || !lastName || !email || !timezone) {
+      const error: CustomError = new Error('userId, firstName, lastName, email, and timezone are required');
       error.statusCode = 400;
       throw error;
     }
@@ -132,6 +134,9 @@ export const createTherapist = async (
       }
     }
 
+    const validStatuses = ["approved", "pending", "rejected", "underReview"];
+    const therapistStatus = status && validStatuses.includes(status) ? status : "pending";
+
     const therapist = new Therapist({
       user: userId,
       profilePhoto,
@@ -139,11 +144,14 @@ export const createTherapist = async (
       lastName,
       preferredName,
       email: email.toLowerCase(),
+      emailVerified: emailVerified !== undefined ? emailVerified : false,
       phone,
+      status: therapistStatus,
       dateOfBirth,
       gender,
       city,
       country,
+      timezone,
       bio,
       videoIntro,
       education: education || [],
@@ -151,7 +159,6 @@ export const createTherapist = async (
       experience: experience || [],
       specializations: specializationsArray,
       languages: languagesArray,
-      isVerified: isVerified || false,
     });
 
     await therapist.save();
@@ -308,7 +315,7 @@ export const getAllTherapists = async (
       search,
       specialization,
       language,
-      isVerified,
+      status,
     } = req.query;
 
     const pageNum = parseInt(page as string, 10);
@@ -334,8 +341,11 @@ export const getAllTherapists = async (
       query.languages = { $in: [language] };
     }
 
-    if (isVerified !== undefined) {
-      query.isVerified = isVerified === 'true';
+    if (status) {
+      const validStatuses = ["approved", "pending", "rejected", "underReview"];
+      if (validStatuses.includes(status as string)) {
+        query.status = status;
+      }
     }
 
     const therapists = await Therapist.find(query)
@@ -627,8 +637,23 @@ export const updateTherapist = async (
       'specializations', 'languages'
     ];
 
-    if (isAdmin && req.body.isVerified !== undefined) {
-      updateData.isVerified = req.body.isVerified === true || req.body.isVerified === 'true';
+    if (isAdmin && req.body.status !== undefined) {
+      const validStatuses = ["approved", "pending", "rejected", "underReview"];
+      if (validStatuses.includes(req.body.status)) {
+        updateData.status = req.body.status;
+      } else {
+        const error: CustomError = new Error('Invalid status. Status must be one of: approved, pending, rejected, underReview');
+        error.statusCode = 400;
+        throw error;
+      }
+    }
+
+    if (isAdmin && req.body.emailVerified !== undefined) {
+      updateData.emailVerified = req.body.emailVerified === true || req.body.emailVerified === 'true';
+    }
+
+    if (isAdmin && req.body.reviewNotes !== undefined) {
+      updateData.reviewNotes = req.body.reviewNotes;
     }
 
     for (const field of allowedFields) {

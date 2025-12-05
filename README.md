@@ -23,13 +23,17 @@ A comprehensive RESTful API backend for a Mental Health Application built with N
   - User registration with email verification (OTP-based)
   - JWT-based authentication
   - Password reset functionality
-  - Role-based access control (Admin, Therapist, Patient)
+  - Role-based access control (Admin, Therapist, Patient, SuperAdmin, TherapistManager, SupportAgent, ContentModerator)
+  - Privacy policy and terms of service acceptance tracking
+  - User status management (active, inactive, pending, blocked, suspended)
 
 - **Therapist Management**
   - Therapist profile creation and management
-  - Therapist verification system
+  - Therapist status workflow (approved, pending, rejected, underReview)
   - Specializations and bio management
   - Profile photo uploads (Cloudinary integration)
+  - Education, certifications, and experience tracking
+  - Review notes (admin-only)
 
 - **Booking System**
   - Session booking with therapists
@@ -235,16 +239,24 @@ backend-mental-health-app-MHA/
 
 ### User
 - Basic user information (name, email, phone, date of birth, gender, country, timezone)
-- Role-based access (admin, therapist, patient)
+- Role-based access (admin, therapist, patient, superAdmin, therapistManager, supportAgent, contentModerator)
 - Email verification status
-- Phone verification status
+- Phone verification status (with countryCode, number, verified)
 - Password hashing with bcrypt
+- User status (active, inactive, pending, blocked, suspended) - default: active
+- Privacy policy and terms of service acceptance tracking
+- Account deletion reason tracking
 - Soft delete support
 
 ### Therapist
 - Extended profile for therapists
-- Specializations, bio, profile photo
-- Verification status
+- Specializations, bio, profile photo, video intro
+- Status workflow (approved, pending, rejected, underReview) - default: pending
+- Education, certifications, and experience arrays with validation status
+- Email verification status
+- Phone verification (with countryCode, number, verified)
+- Required timezone field
+- Review notes (admin-only field)
 - Linked to User model
 
 ### Booking
@@ -315,19 +327,18 @@ Authorization: Bearer <your-jwt-token>
 #### Users (`/api/users`)
 - `POST /` - Create user (admin)
 - `GET /me` - Get current user profile
-- `GET /` - Get all users (with filters)
+- `GET /` - Get all users (with filters: role, country, gender, status)
 - `GET /:id` - Get user by ID
-- `PUT /:id` - Update user
+- `PUT /:id` - Update user (users can update: firstName, lastName, email, phone, dateOfBirth, gender, country, timezone, privacyPolicyAccepted, termsOfServiceAccepted; admins can also update: role, status)
 - `DELETE /:id` - Delete user (soft delete)
 
 #### Therapists (`/api/therapists`)
-- `POST /` - Create therapist profile
-- `GET /` - Get all therapists (with filters)
+- `POST /` - Create therapist profile (required: userId, firstName, lastName, email, timezone)
+- `GET /` - Get all therapists (with filters: search, specialization, language, status)
 - `GET /:id` - Get therapist by ID
-- `PUT /:id` - Update therapist
+- `GET /user/:userId` - Get therapist by user ID
+- `PUT /:id` - Update therapist (admins can update: status, emailVerified, reviewNotes)
 - `DELETE /:id` - Delete therapist
-- `POST /:id/upload-photo` - Upload profile photo
-- `PUT /:id/verify` - Verify therapist (admin)
 
 #### Bookings (`/api/bookings`)
 - `POST /` - Create booking (authenticated)
@@ -405,10 +416,23 @@ All API responses follow this format:
 
 ### Pagination
 
-List endpoints support pagination:
+List endpoints support pagination and filtering:
 ```
-GET /api/users?page=1&limit=10
+GET /api/users?page=1&limit=10&role=patient&status=active
+GET /api/therapists?page=1&limit=10&status=approved&specialization=Anxiety
 ```
+
+**User Filters:**
+- `role`: Filter by user role (admin, therapist, patient, superAdmin, therapistManager, supportAgent, contentModerator)
+- `country`: Filter by country (case-insensitive partial match)
+- `gender`: Filter by gender (male, female, other)
+- `status`: Filter by user status (active, inactive, pending, blocked, suspended)
+
+**Therapist Filters:**
+- `search`: Search in firstName, lastName, email, or bio
+- `specialization`: Filter by specialization
+- `language`: Filter by language
+- `status`: Filter by therapist status (approved, pending, rejected, underReview)
 
 Response includes pagination metadata:
 ```json
@@ -431,10 +455,14 @@ Response includes pagination metadata:
 ### Registration Flow
 
 1. User registers via `POST /api/auth/register`
+   - Required fields: firstName, lastName, email, phone (with countryCode, number, verified), dateOfBirth, gender, country, timezone, password, emailVerified
+   - Optional fields: role, privacyPolicyAccepted, termsOfServiceAccepted
+   - New users start with status: "pending"
 2. User receives JWT token (email not verified yet)
 3. User calls `POST /api/auth/send-verification-email` to receive OTP
 4. User verifies email via `POST /api/auth/verify-email` with OTP
 5. Email is marked as verified
+6. Admin can update user status to "active" after verification
 
 ### JWT Token
 
@@ -544,6 +572,25 @@ A complete Postman collection is included: `Mental_Health_App_API.postman_collec
 - **CORS**: Configure `CLIENT_URL` for production frontend
 
 ## 📝 Additional Notes
+
+### User Status Management
+- **Status Values**: active, inactive, pending, blocked, suspended
+- **Default Status**: 
+  - New registrations: "pending"
+  - OAuth users: "active"
+  - Admin-created users: "active" (or specified)
+- **Status Updates**: Only admins can update user status
+
+### Therapist Status Workflow
+- **Status Values**: approved, pending, rejected, underReview
+- **Default Status**: "pending" for all new therapist profiles
+- **Status Updates**: Only admins can update therapist status
+- **Review Notes**: Admins can add review notes when updating therapist status
+
+### Privacy & Terms Acceptance
+- Users can accept privacy policy and terms of service during registration
+- These fields can be updated by users in their profile
+- OAuth users automatically accept both (set to true)
 
 ### Soft Delete
 Most models support soft delete using `deletedAt` field. Deleted records are excluded from queries but remain in the database.

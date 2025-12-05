@@ -33,7 +33,7 @@ async function getRefreshToken() {
     console.log(`Using Client Secret from .env: ${clientSecret.substring(0, 10)}...`);
   }
 
-  const redirectUri = process.env.GOOGLE_REDIRECT_URI || 'urn:ietf:wg:oauth:2.0:oob';
+  const redirectUri = process.env.GOOGLE_REDIRECT_URL || 'urn:ietf:wg:oauth:2.0:oob';
 
   const oauth2Client = new google.auth.OAuth2(
     clientId,
@@ -65,7 +65,7 @@ async function getRefreshToken() {
     console.log(`GOOGLE_CLIENT_ID=${clientId}`);
     console.log(`GOOGLE_CLIENT_SECRET=${clientSecret}`);
     console.log(`GOOGLE_REFRESH_TOKEN=${tokens.refresh_token}`);
-    console.log(`GOOGLE_REDIRECT_URI=${redirectUri}`);
+    console.log(`GOOGLE_REDIRECT_URL=${redirectUri}`);
 
     if (tokens.access_token) {
       console.log(`\nAccess Token (temporary): ${tokens.access_token.substring(0, 20)}...`);

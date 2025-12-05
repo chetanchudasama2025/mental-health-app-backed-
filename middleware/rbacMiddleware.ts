@@ -2,12 +2,10 @@ import { Response, NextFunction } from 'express';
 import { AuthRequest } from './authMiddleware';
 import { CustomError } from './errorHandler';
 import { Actions, Subjects } from '../config/abilities';
+import { IUser } from "../models/User";
 
 /**
  * RBAC Middleware to check if user has permission to perform an action on a subject
- * @param action - The action to check (create, read, update, delete, manage)
- * @param subject - The subject/resource to check (User, Therapist, Booking, etc.)
- * @returns Express middleware function
  */
 export const checkPermission = (action: Actions, subject: Subjects) => {
   return (req: AuthRequest, _res: Response, next: NextFunction): void => {
@@ -38,11 +36,10 @@ export const checkPermission = (action: Actions, subject: Subjects) => {
 };
 
 /**
- * Middleware to check if user has a specific role
- * @param roles - Array of allowed roles
- * @returns Express middleware function
+ * Middleware to check if user has specific allowed roles.
+ * Now synced CORRECTLY with your User model
  */
-export const requireRole = (...roles: Array<'admin' | 'therapist' | 'patient'>) => {
+export const requireRole = (...roles: Array<IUser["role"]>) => {
   return (req: AuthRequest, _res: Response, next: NextFunction): void => {
     try {
       if (!req.user) {
@@ -52,7 +49,9 @@ export const requireRole = (...roles: Array<'admin' | 'therapist' | 'patient'>) 
       }
 
       if (!roles.includes(req.user.role)) {
-        const error: CustomError = new Error(`Access denied. Required role: ${roles.join(' or ')}`);
+        const error: CustomError = new Error(
+          `Access denied. Required role: ${roles.join(' or ')}`
+        );
         error.statusCode = 403;
         throw error;
       }
@@ -65,10 +64,7 @@ export const requireRole = (...roles: Array<'admin' | 'therapist' | 'patient'>) 
 };
 
 /**
- * Middleware to check if user owns the resource or is admin
- * This is a helper for checking resource ownership
- * @param getResourceOwnerId - Function to extract owner ID from request
- * @returns Express middleware function
+ * Middleware to check ownership or admin/superAdmin access
  */
 export const requireOwnershipOrAdmin = (
   getResourceOwnerId: (req: AuthRequest) => string | null
@@ -81,7 +77,7 @@ export const requireOwnershipOrAdmin = (
         throw error;
       }
 
-      if (req.user.role === 'admin') {
+      if (req.user.role === 'admin' || req.user.role === 'superAdmin') {
         return next();
       }
 
@@ -104,4 +100,3 @@ export const requireOwnershipOrAdmin = (
     }
   };
 };
-
