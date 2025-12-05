@@ -8,7 +8,7 @@ import { routes } from './routes/index';
 import { connectDatabase } from './config/database';
 
 dotenv.config();                              
-
+                  
 const app: Application = express();
 const PORT = process.env.PORT || 3000;
 
