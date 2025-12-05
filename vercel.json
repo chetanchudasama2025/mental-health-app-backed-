@@ -19,12 +19,6 @@
       "src": "/(.*)",
       "dest": "/index.ts"
     }
-  ],
-  "crons": [
-    {
-      "path": "/api/cron/backup",
-      "schedule": "5 23 * * *"
-    }
   ]
 }
 
