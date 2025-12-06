@@ -118,7 +118,7 @@ export const getAllNotifications = async (
 
     res.status(200).json({
       success: true,
-      message: 'Notifications fetched successfully',
+      message: 'Notifications retrieved successfully',
       data: {
         notifications,
         pagination: {
@@ -168,7 +168,7 @@ export const getNotificationById = async (
 
     res.status(200).json({
       success: true,
-      message: 'Notification fetched successfully',
+      message: 'Notification information retrieved successfully',
       data: notification,
     });
   } catch (error) {
@@ -250,14 +250,14 @@ export const updateNotification = async (
     ).populate('user', 'firstName lastName email');
 
     if (!updatedNotification) {
-      const error: CustomError = new Error('Failed to update notification');
+      const error: CustomError = new Error('Failed to update notification. Please try again.');
       error.statusCode = 500;
       throw error;
     }
 
     res.status(200).json({
       success: true,
-      message: 'Notification updated successfully',
+      message: 'Notification information updated successfully',
       data: updatedNotification,
     });
   } catch (error) {
@@ -304,7 +304,7 @@ export const markNotificationAsRead = async (
 
     res.status(200).json({
       success: true,
-      message: 'Notification marked as read',
+      message: 'Notification has been marked as read',
       data: notification,
     });
   } catch (error) {
@@ -334,7 +334,7 @@ export const markAllNotificationsAsRead = async (
 
     res.status(200).json({
       success: true,
-      message: 'All notifications marked as read',
+      message: 'All notifications have been marked as read',
       data: {
         modifiedCount: result.modifiedCount,
       },
@@ -377,7 +377,7 @@ export const deleteNotification = async (
 
     res.status(200).json({
       success: true,
-      message: 'Notification deleted successfully',
+      message: 'Notification has been deleted successfully',
     });
   } catch (error) {
     next(error);
@@ -403,7 +403,7 @@ export const getUnreadNotificationCount = async (
 
     res.status(200).json({
       success: true,
-      message: 'Unread notification count fetched successfully',
+      message: 'Unread notification count retrieved successfully',
       data: {
         unreadCount,
       },

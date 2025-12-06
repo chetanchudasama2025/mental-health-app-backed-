@@ -77,7 +77,7 @@
 								"register"
 							]
 						},
-						"description": "Register a new user. Role can be 'admin', 'therapist', 'patient', 'superAdmin', 'therapistManager', 'supportAgent', or 'contentModerator' (default: 'patient'). If role is 'therapist', a therapist profile is automatically created.\n\n**IMPORTANT:** The password field must be encrypted using AES encryption with the ENCRYPTION_KEY before sending. The backend will decrypt it automatically.\n\nRequired fields:\n- firstName, lastName, email, phone (with countryCode, number, verified), dateOfBirth, gender, country, timezone, password, emailVerified\n\nOptional fields:\n- role: User role (default: 'patient')\n- privacyPolicyAccepted: Boolean (default: false)\n- termsOfServiceAccepted: Boolean (default: false)\n\nResponse includes:\n- `token`: Access token (short-lived, default: 7 days)\n- `refreshToken`: Refresh token (long-lived, default: 30 days) - use this to get new access tokens via the Refresh Token endpoint\n\nNote: Email verification is separate. After registration, call the 'Send Verification Email' endpoint to receive the verification OTP. The user's emailVerified field will be set to false until verified. New users start with status: 'pending'."
+						"description": "Register a new user. Role can be 'admin', 'therapist', 'patient', 'superAdmin', 'therapistManager', 'supportAgent', or 'contentModerator' (default: 'patient'). If role is 'therapist', a therapist profile is automatically created.\n\n**IMPORTANT:** The password field must be encrypted using AES encryption with the ENCRYPTION_KEY before sending. The backend will decrypt it automatically.\n\n**Profile Photo Upload:**\nTo upload a profile photo during registration, use form-data instead of JSON:\n- Set Content-Type to multipart/form-data\n- Add field: `profilePhoto` (file)\n- Supported formats: JPEG, JPG, PNG, GIF, WEBP\n- Maximum file size: 100MB\n- Photo will be uploaded to Cloudinary and URL saved to user's profilePhoto field\n\nRequired fields:\n- firstName, lastName, email, phone (with countryCode, number, verified), dateOfBirth, gender, country, timezone, password, emailVerified\n\nOptional fields:\n- role: User role (default: 'patient')\n- privacyPolicyAccepted: Boolean (default: false)\n- termsOfServiceAccepted: Boolean (default: false)\n- profilePhoto: Profile photo file (if using form-data)\n\nResponse includes:\n- `token`: Access token (short-lived, default: 7 days)\n- `refreshToken`: Refresh token (long-lived, default: 30 days) - use this to get new access tokens via the Refresh Token endpoint\n\nNote: Email verification is separate. After registration, call the 'Send Verification Email' endpoint to receive the verification OTP. The user's emailVerified field will be set to false until verified. New users start with status: 'pending'."
 					},
 					"response": []
 				},
@@ -447,7 +447,7 @@
 								"verify-email"
 							]
 						},
-						"description": "Verify email address using the OTP received via email. Does not require authentication.\n\nRequired fields:\n- `otp`: 6-digit verification code received in email\n- `email`: The email address to verify\n\nValidations:\n- OTP must match the one sent to the user\n- OTP expires after 10 minutes\n- Maximum 5 attempts allowed\n- If maximum attempts exceeded, user must request a new OTP\n- If email is already verified, returns an error\n\nOn success:\n- Sets emailVerified to true\n- Deletes the verification token\n- Returns success message"
+						"description": "Verify email address using the OTP received via email. Does not require authentication.\n\n**Email Verification Status Check:**\nThis endpoint first checks if the email exists in the database:\n- If email doesn't exist: Returns \"Email not verified\" with exists: false\n- If email exists and is already verified: Returns \"Email already verified\" with emailVerified: true (skips OTP verification)\n- If email exists but not verified: Proceeds with OTP verification\n\nRequired fields:\n- `email`: The email address to verify (required for status check)\n- `otp`: 6-digit verification code received in email (required only if email exists and is not verified)\n\nValidations:\n- Email must be provided\n- If proceeding with OTP verification:\n  - OTP must match the one sent to the user\n  - OTP expires after 10 minutes\n  - Maximum 5 attempts allowed\n  - If maximum attempts exceeded, user must request a new OTP\n\nOn success (when OTP is verified):\n- Sets emailVerified to true in user model\n- Deletes the verification token\n- Returns success message with email verification status"
 					},
 					"response": []
 				},
@@ -1830,7 +1830,7 @@
 								}
 							]
 						},
-						"description": "Update a user profile.\n\n**RBAC:** Requires authentication. Users can update their own profile. Admins can update any user profile and modify the role field. If updating a therapist user, the therapist profile will also be updated with common fields.\n\n**Permissions:**\n- Admin: Can update any user\n- Therapist/Patient: Can only update own profile"
+						"description": "Update a user profile.\n\n**RBAC:** Requires authentication. Users can update their own profile. Admins can update any user profile and modify the role field. If updating a therapist user, the therapist profile will also be updated with common fields.\n\n**Permissions:**\n- Admin: Can update any user\n- Therapist/Patient: Can only update own profile\n\n**Profile Photo Upload:**\nTo upload a profile photo, use form-data instead of JSON:\n- Set Content-Type to multipart/form-data\n- Add field: `profilePhoto` (file)\n- Supported formats: JPEG, JPG, PNG, GIF, WEBP\n- Maximum file size: 100MB\n- Photo will be uploaded to Cloudinary and URL saved to user's profilePhoto field\n\n**Alternative:** You can also set profilePhoto URL directly in JSON body if you have the URL from another source."
 					},
 					"response": []
 				},
@@ -1923,6 +1923,68 @@
 							]
 						},
 						"description": "Update user password. Requires authentication. Users can only update their own password unless they are an admin. Password must be at least 6 characters long."
+					},
+					"response": []
+				},
+				{
+					"name": "Update User with Profile Photo",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "firstName",
+									"value": "John",
+									"type": "text"
+								},
+								{
+									"key": "lastName",
+									"value": "Smith",
+									"type": "text"
+								},
+								{
+									"key": "email",
+									"value": "john.smith@example.com",
+									"type": "text"
+								},
+								{
+									"key": "profilePhoto",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/users/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"users",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "user-id-here",
+									"description": "User MongoDB ObjectId"
+								}
+							]
+						},
+						"description": "Update user profile with profile photo upload. Requires authentication. Users can update their own profile. Admins can update any user profile.\n\n**Profile Photo Upload:**\n- Use form-data (multipart/form-data) for file uploads\n- Field name: `profilePhoto`\n- Supported formats: JPEG, JPG, PNG, GIF, WEBP\n- Maximum file size: 100MB\n- Photo will be uploaded to Cloudinary under `users/{userId}/profile-photos/`\n- The Cloudinary URL will be saved to the user's profilePhoto field\n\n**Other Fields:**\nYou can include other user fields in the form-data:\n- firstName, lastName, email, phone, dateOfBirth, gender, country, timezone, privacyPolicyAccepted, termsOfServiceAccepted\n\n**Note:** If you only want to update the profile photo, you can send just the profilePhoto file. Other fields are optional."
 					},
 					"response": []
 				},

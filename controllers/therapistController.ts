@@ -90,7 +90,7 @@ export const createTherapist = async (
     } = req.body;
 
     if (!userId || !firstName || !lastName || !email || !timezone) {
-      const error: CustomError = new Error('userId, firstName, lastName, email, and timezone are required');
+      const error: CustomError = new Error('User ID, first name, last name, email, and timezone are required');
       error.statusCode = 400;
       throw error;
     }
@@ -104,14 +104,14 @@ export const createTherapist = async (
 
     const existingTherapist = await Therapist.findOne({ user: userId, deletedAt: null });
     if (existingTherapist) {
-      const error: CustomError = new Error('Therapist profile already exists for this user');
+      const error: CustomError = new Error('A therapist profile already exists for this user. Please update the existing profile instead.');
       error.statusCode = 409;
       throw error;
     }
 
     const emailExists = await Therapist.findOne({ email: email.toLowerCase(), deletedAt: null });
     if (emailExists) {
-      const error: CustomError = new Error('Email already in use');
+      const error: CustomError = new Error('This email address is already in use by another therapist');
       error.statusCode = 409;
       throw error;
     }
@@ -294,7 +294,7 @@ export const createTherapist = async (
 
     res.status(201).json({
       success: true,
-      message: 'Therapist created successfully',
+      message: 'Therapist profile created successfully',
       data: therapist,
     });
   } catch (error) {
@@ -358,7 +358,7 @@ export const getAllTherapists = async (
 
     res.status(200).json({
       success: true,
-      message: 'Therapists fetched successfully',
+      message: 'Therapists retrieved successfully',
       data: {
         therapists,
         pagination: {
@@ -402,7 +402,7 @@ export const getTherapistById = async (
 
     res.status(200).json({
       success: true,
-      message: 'Therapist fetched successfully',
+      message: 'Therapist information retrieved successfully',
       data: therapist,
     });
   } catch (error) {
@@ -438,7 +438,7 @@ export const getTherapistByUserId = async (
 
     res.status(200).json({
       success: true,
-      message: 'Therapist fetched successfully',
+      message: 'Therapist information retrieved successfully',
       data: therapist,
     });
   } catch (error) {
@@ -490,7 +490,7 @@ export const updateTherapist = async (
     const isAdmin = user.role === 'admin';
 
     if (!isOwner && !isAdmin) {
-      const error: CustomError = new Error('Unauthorized: You can only update your own therapist profile');
+      const error: CustomError = new Error('Unauthorized. You can only update your own therapist profile');
       error.statusCode = 403;
       throw error;
     }
@@ -623,7 +623,7 @@ export const updateTherapist = async (
           deletedAt: null
         });
         if (emailExists) {
-          const error: CustomError = new Error('Email already in use by another therapist');
+          const error: CustomError = new Error('This email address is already in use by another therapist');
           error.statusCode = 409;
           throw error;
         }
@@ -642,7 +642,7 @@ export const updateTherapist = async (
       if (validStatuses.includes(req.body.status)) {
         updateData.status = req.body.status;
       } else {
-        const error: CustomError = new Error('Invalid status. Status must be one of: approved, pending, rejected, underReview');
+        const error: CustomError = new Error('Invalid status. Status must be one of: approved, pending, rejected, or underReview');
         error.statusCode = 400;
         throw error;
       }
@@ -739,7 +739,7 @@ export const updateTherapist = async (
           deletedAt: null
         });
         if (emailExists) {
-          const error: CustomError = new Error('Email already in use by another user');
+          const error: CustomError = new Error('This email address is already in use by another user account');
           error.statusCode = 409;
           throw error;
         }
@@ -760,7 +760,7 @@ export const updateTherapist = async (
     const [updatedTherapist] = await Promise.all(updatePromises);
 
     if (!updatedTherapist) {
-      const error: CustomError = new Error('Failed to update therapist');
+      const error: CustomError = new Error('Failed to update therapist profile. Please try again.');
       error.statusCode = 500;
       throw error;
     }
@@ -771,7 +771,7 @@ export const updateTherapist = async (
 
     res.status(200).json({
       success: true,
-      message: 'Therapist updated successfully',
+      message: 'Therapist profile updated successfully',
       data: finalTherapist,
     });
   } catch (error: any) {
@@ -816,7 +816,7 @@ export const deleteTherapist = async (
 
     const therapistUserId = (therapist.user as mongoose.Types.ObjectId).toString();
     if (therapistUserId !== userId && user.role !== 'admin') {
-      const error: CustomError = new Error('Unauthorized: You can only delete your own therapist profile');
+      const error: CustomError = new Error('Unauthorized. You can only delete your own therapist profile');
       error.statusCode = 403;
       throw error;
     }
@@ -827,7 +827,7 @@ export const deleteTherapist = async (
 
     res.status(200).json({
       success: true,
-      message: 'Therapist deleted successfully',
+      message: 'Therapist profile deleted successfully',
     });
   } catch (error) {
     next(error);

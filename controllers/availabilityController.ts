@@ -24,7 +24,7 @@ export const createAvailability = async (
     } = req.body;
 
     if (!therapistId || !timeZone || !bufferTime || !price || !sessionDuration) {
-      const error: CustomError = new Error('therapistId, timeZone, bufferTime, price, and sessionDuration are required');
+      const error: CustomError = new Error('Therapist ID, timezone, buffer time, price, and session duration are required');
       error.statusCode = 400;
       throw error;
     }
@@ -44,7 +44,7 @@ export const createAvailability = async (
 
     const existingAvailability = await Availability.findOne({ therapistId });
     if (existingAvailability) {
-      const error: CustomError = new Error('Availability already exists for this therapist. Use update instead.');
+      const error: CustomError = new Error('An availability schedule already exists for this therapist. Please update the existing schedule instead.');
       error.statusCode = 409;
       throw error;
     }
@@ -66,7 +66,7 @@ export const createAvailability = async (
 
     res.status(201).json({
       success: true,
-      message: 'Availability created successfully',
+      message: 'Availability schedule created successfully',
       data: populatedAvailability,
     });
   } catch (error) {
@@ -117,7 +117,7 @@ export const getAllAvailabilities = async (
 
     res.status(200).json({
       success: true,
-      message: 'Availabilities fetched successfully',
+      message: 'Availability schedules retrieved successfully',
       data: {
         availabilities,
         pagination: {
@@ -159,7 +159,7 @@ export const getAvailabilityById = async (
 
     res.status(200).json({
       success: true,
-      message: 'Availability fetched successfully',
+      message: 'Availability information retrieved successfully',
       data: availability,
     });
   } catch (error) {
@@ -186,14 +186,14 @@ export const getAvailabilityByTherapistId = async (
       .populate('therapistId', 'firstName lastName email');
 
     if (!availability) {
-      const error: CustomError = new Error('Availability not found for this therapist');
+      const error: CustomError = new Error('No availability schedule found for this therapist');
       error.statusCode = 404;
       throw error;
     }
 
     res.status(200).json({
       success: true,
-      message: 'Availability fetched successfully',
+      message: 'Availability information retrieved successfully',
       data: availability,
     });
   } catch (error) {
@@ -247,7 +247,7 @@ export const updateAvailability = async (
         if (therapistUser) {
           const therapistUserId = (therapistUser._id as mongoose.Types.ObjectId).toString();
           if (therapistUserId !== userId && therapistUser.role !== 'admin') {
-            const error: CustomError = new Error('Unauthorized: You can only update your own availability');
+            const error: CustomError = new Error('Unauthorized. You can only update your own availability schedule');
             error.statusCode = 403;
             throw error;
           }
@@ -271,14 +271,14 @@ export const updateAvailability = async (
     ).populate('therapistId', 'firstName lastName email');
 
     if (!updatedAvailability) {
-      const error: CustomError = new Error('Failed to update availability');
+      const error: CustomError = new Error('Failed to update availability schedule. Please try again.');
       error.statusCode = 500;
       throw error;
     }
 
     res.status(200).json({
       success: true,
-      message: 'Availability updated successfully',
+      message: 'Availability schedule updated successfully',
       data: updatedAvailability,
     });
   } catch (error) {
@@ -324,7 +324,7 @@ export const deleteAvailability = async (
         if (therapistUser) {
           const therapistUserId = (therapistUser._id as mongoose.Types.ObjectId).toString();
           if (therapistUserId !== userId && therapistUser.role !== 'admin') {
-            const error: CustomError = new Error('Unauthorized: You can only delete your own availability');
+            const error: CustomError = new Error('Unauthorized. You can only delete your own availability schedule');
             error.statusCode = 403;
             throw error;
           }
@@ -336,7 +336,7 @@ export const deleteAvailability = async (
 
     res.status(200).json({
       success: true,
-      message: 'Availability deleted successfully',
+      message: 'Availability schedule deleted successfully',
     });
   } catch (error) {
     next(error);

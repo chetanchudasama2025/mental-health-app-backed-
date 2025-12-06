@@ -38,7 +38,7 @@ export const createSupportTicket = async (
     }
 
     if (!['patient', 'therapist'].includes(userType)) {
-      const error: CustomError = new Error('Invalid userType. Must be either "patient" or "therapist"');
+      const error: CustomError = new Error('Invalid user type. Must be either "patient" or "therapist"');
       error.statusCode = 400;
       throw error;
     }
@@ -54,13 +54,13 @@ export const createSupportTicket = async (
     ];
 
     if (!validCategories.includes(issueCategory)) {
-      const error: CustomError = new Error('Invalid issueCategory');
+      const error: CustomError = new Error('Invalid issue category. Please select a valid category.');
       error.statusCode = 400;
       throw error;
     }
 
     if (priority && !['low', 'medium', 'high'].includes(priority)) {
-      const error: CustomError = new Error('Invalid priority. Must be one of: low, medium, high');
+      const error: CustomError = new Error('Invalid priority level. Must be one of: low, medium, or high');
       error.statusCode = 400;
       throw error;
     }
@@ -100,7 +100,7 @@ export const createSupportTicket = async (
 
     res.status(201).json({
       success: true,
-      message: 'Support ticket created successfully',
+      message: 'Support ticket created successfully. Our team will review it shortly.',
       data: supportTicket,
     });
   } catch (error) {
@@ -185,7 +185,7 @@ export const getAllSupportTickets = async (
 
     res.status(200).json({
       success: true,
-      message: 'Support tickets fetched successfully',
+      message: 'Support tickets retrieved successfully',
       data: {
         supportTickets,
         pagination: {
@@ -227,7 +227,7 @@ export const getSupportTicketById = async (
 
     res.status(200).json({
       success: true,
-      message: 'Support ticket fetched successfully',
+      message: 'Support ticket information retrieved successfully',
       data: supportTicket,
     });
   } catch (error) {
@@ -363,14 +363,14 @@ export const updateSupportTicket = async (
     ).populate('userId', 'firstName lastName email role');
 
     if (!updatedSupportTicket) {
-      const error: CustomError = new Error('Failed to update support ticket');
+      const error: CustomError = new Error('Failed to update support ticket. Please try again.');
       error.statusCode = 500;
       throw error;
     }
 
     res.status(200).json({
       success: true,
-      message: 'Support ticket updated successfully',
+      message: 'Support ticket information updated successfully',
       data: updatedSupportTicket,
     });
   } catch (error) {
@@ -404,7 +404,7 @@ export const deleteSupportTicket = async (
 
     res.status(200).json({
       success: true,
-      message: 'Support ticket deleted successfully',
+      message: 'Support ticket has been deleted successfully',
     });
   } catch (error) {
     next(error);

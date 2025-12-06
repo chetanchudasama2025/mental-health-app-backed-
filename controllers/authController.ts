@@ -98,7 +98,6 @@ function generateChallenge(verifier: string) {
 
 const pkceStore = new Map<string, { verifier: string; expires: number }>();
 
-// Send email verification OTP
 const sendVerificationEmail = async (email: string, otp: string): Promise<void> => {
   try {
     const transporter = createTransporter();
@@ -146,7 +145,7 @@ export const register = async (
     try {
       password = decrypt(encryptedPassword);
     } catch (decryptError) {
-      const error: CustomError = new Error('Failed to decrypt password. Invalid encryption.');
+      const error: CustomError = new Error('Failed to decrypt password. Please ensure the encryption key matches between frontend and backend.');
       error.statusCode = 400;
       throw error;
     }
@@ -167,21 +166,21 @@ export const register = async (
       !timezone ||
       !password
     ) {
-      const error: CustomError = new Error('All fields are required');
+      const error: CustomError = new Error('All required fields must be provided');
       error.statusCode = 400;
       throw error;
     }
 
     const validRoles = ["admin", "therapist", "patient", "superAdmin", "therapistManager", "supportAgent", "contentModerator"];
     if (role && !validRoles.includes(role)) {
-      const error: CustomError = new Error('Invalid role. Role must be one of: admin, therapist, patient, superAdmin, therapistManager, supportAgent, contentModerator');
+      const error: CustomError = new Error('Invalid role. Role must be one of: admin, therapist, patient, superAdmin, therapistManager, supportAgent, or contentModerator');
       error.statusCode = 400;
       throw error;
     }
 
     const existingUser = await User.findOne({ email: email.toLowerCase(), deletedAt: null });
     if (existingUser) {
-      const error: CustomError = new Error('User with this email already exists');
+      const error: CustomError = new Error('An account with this email address already exists');
       error.statusCode = 409;
       throw error;
     }
@@ -251,7 +250,7 @@ export const register = async (
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully. Please verify your email address.',
+      message: 'Account created successfully. Please verify your email address to complete registration.',
       data: {
         user: userWithoutPassword,
         token,
@@ -300,7 +299,7 @@ export const login = async (
         emailLength: encryptedEmail?.length,
         passwordLength: encryptedPassword?.length
       });
-      const error: CustomError = new Error('Failed to decrypt credentials. Invalid encryption. Please ensure the encryption key matches between frontend and backend.');
+      const error: CustomError = new Error('Failed to decrypt credentials. Please ensure the encryption key matches between frontend and backend.');
       error.statusCode = 400;
       throw error;
     }
@@ -319,7 +318,7 @@ export const login = async (
     }
 
     if (!user.password) {
-      const error: CustomError = new Error('This account was created with social login. Please use social login to sign in.');
+      const error: CustomError = new Error('This account was created using social login. Please sign in with your social account.');
       error.statusCode = 401;
       throw error;
     }
@@ -364,7 +363,7 @@ export const login = async (
 
     res.status(200).json({
       success: true,
-      message: 'Login successful',
+      message: 'Login successful. Welcome back!',
       data: {
         user: userWithoutPassword,
         token,
@@ -395,7 +394,7 @@ export const forgotPassword = async (
     if (!user) {
       res.status(200).json({
         success: true,
-        message: "If an account with that email exists, a password reset link has been sent.",
+        message: "If an account with that email exists, a password reset link has been sent to your email address.",
       });
       return;
     }
@@ -427,7 +426,7 @@ export const forgotPassword = async (
 
     res.status(200).json({
       success: true,
-      message: "Reset link sent successfully.",
+      message: "Password reset link has been sent to your email address.",
       ...(process.env.NODE_ENV !== "production" && { resetToken }),
     });
   } catch (error) {
@@ -445,21 +444,21 @@ export const resetPassword = async (
     const { token, password } = req.body;
 
     if (!token || !password) {
-      const error: CustomError = new Error("Token & new password required");
+      const error: CustomError = new Error("Reset token and new password are required");
       error.statusCode = 400;
       throw error;
     }
 
     const resetTokenDoc = await PasswordResetToken.findOne({ token });
     if (!resetTokenDoc) {
-      const error: CustomError = new Error("Invalid or expired reset token");
+      const error: CustomError = new Error("Invalid or expired password reset token. Please request a new reset link.");
       error.statusCode = 400;
       throw error;
     }
 
     if (resetTokenDoc.expiresAt < new Date()) {
       await PasswordResetToken.findByIdAndDelete(resetTokenDoc._id);
-      const error: CustomError = new Error("Reset link has expired");
+      const error: CustomError = new Error("Password reset link has expired. Please request a new reset link.");
       error.statusCode = 400;
       throw error;
     }
@@ -479,7 +478,7 @@ export const resetPassword = async (
 
     res.status(200).json({
       success: true,
-      message: "Password reset successfully",
+      message: "Your password has been reset successfully. You can now sign in with your new password.",
     });
   } catch (error) {
     next(error);
@@ -511,7 +510,7 @@ export const getUser = async (
 
     res.status(200).json({
       success: true,
-      message: 'User fetched successfully',
+      message: 'User information retrieved successfully',
       data: user,
     });
   } catch (error) {
@@ -528,33 +527,70 @@ export const verifyEmail = async (
   try {
     const { otp, email } = req.body;
 
+    if (!email) {
+      const error: CustomError = new Error('Email address is required');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const user = await User.findOne({
+      email: email.toLowerCase().trim(),
+      deletedAt: null
+    });
+
+    if (!user) {
+      res.status(200).json({
+        success: true,
+        message: 'Email not verified',
+        data: {
+          email: email.toLowerCase().trim(),
+          emailVerified: false,
+          exists: false,
+        },
+      });
+      return;
+    }
+
+    if (user.emailVerified) {
+      res.status(200).json({
+        success: true,
+        message: 'Email already verified',
+        data: {
+          email: user.email,
+          emailVerified: true,
+          exists: true,
+        },
+      });
+      return;
+    }
+
     if (!otp) {
-      const error: CustomError = new Error('OTP is required');
+      const error: CustomError = new Error('Verification code (OTP) is required');
       error.statusCode = 400;
       throw error;
     }
 
     const verificationToken = await EmailVerificationToken.findOne({
-      email: email,
+      email: email.toLowerCase().trim(),
       deletedAt: null,
     });
 
     if (!verificationToken) {
-      const error: CustomError = new Error('Verification code not found. Please request a new one.');
+      const error: CustomError = new Error('Verification code not found or has been used. Please request a new verification code.');
       error.statusCode = 404;
       throw error;
     }
 
     if (verificationToken.expiresAt < new Date()) {
       await EmailVerificationToken.findByIdAndUpdate(verificationToken._id, { deletedAt: new Date() });
-      const error: CustomError = new Error('Verification code has expired. Please request a new one.');
+      const error: CustomError = new Error('Verification code has expired. Please request a new verification code.');
       error.statusCode = 400;
       throw error;
     }
 
     if (verificationToken.attempts >= 5) {
       await EmailVerificationToken.findByIdAndUpdate(verificationToken._id, { deletedAt: new Date() });
-      const error: CustomError = new Error('Maximum attempts exceeded. Please request a new verification code.');
+      const error: CustomError = new Error('Maximum verification attempts exceeded. Please request a new verification code.');
       error.statusCode = 400;
       throw error;
     }
@@ -562,18 +598,23 @@ export const verifyEmail = async (
     if (verificationToken.otp !== otp) {
       verificationToken.attempts += 1;
       await verificationToken.save();
-      const error: CustomError = new Error(`Invalid verification code. ${5 - verificationToken.attempts} attempts remaining.`);
+      const error: CustomError = new Error(`Invalid verification code. You have ${5 - verificationToken.attempts} attempt(s) remaining.`);
       error.statusCode = 400;
       throw error;
     }
+
+    user.emailVerified = true;
+    await user.save();
 
     await EmailVerificationToken.findByIdAndUpdate(verificationToken._id, { deletedAt: new Date() });
 
     res.status(200).json({
       success: true,
-      message: 'Email verified successfully',
+      message: 'Email address verified successfully',
       data: {
+        email: user.email,
         emailVerified: true,
+        exists: true,
       },
     });
   } catch (error) {
@@ -615,7 +656,7 @@ export const sendVerificationEmailAPI = async (
       await sendVerificationEmail(email, otp);
       res.status(200).json({
         success: true,
-        message: 'Verification email sent successfully',
+        message: 'Verification email has been sent successfully. Please check your inbox.',
         ...(process.env.NODE_ENV !== 'production' && { otp }),
       });
     } catch (emailError) {
@@ -627,7 +668,7 @@ export const sendVerificationEmailAPI = async (
       } else {
         res.status(200).json({
           success: true,
-          message: 'Verification email sent successfully (dev mode)',
+          message: 'Verification email sent successfully (development mode)',
           otp,
         });
       }
@@ -671,7 +712,7 @@ export const resendVerificationEmail = async (
       await sendVerificationEmail(email, otp);
       res.status(200).json({
         success: true,
-        message: 'Verification email sent successfully',
+        message: 'Verification email has been sent successfully. Please check your inbox.',
         ...(process.env.NODE_ENV !== 'production' && { otp }),
       });
     } catch (emailError) {
@@ -683,7 +724,7 @@ export const resendVerificationEmail = async (
       } else {
         res.status(200).json({
           success: true,
-          message: 'Verification email sent successfully (dev mode)',
+          message: 'Verification email sent successfully (development mode)',
           otp,
         });
       }
@@ -710,13 +751,13 @@ export const changePassword = async (
     }
 
     if (!oldPassword || !newPassword) {
-      const error: CustomError = new Error('Old password and new password are required');
+      const error: CustomError = new Error('Both current password and new password are required');
       error.statusCode = 400;
       throw error;
     }
 
     if (newPassword.length < 6) {
-      const error: CustomError = new Error('New password must be at least 6 characters long');
+      const error: CustomError = new Error('New password must be at least 6 characters in length');
       error.statusCode = 400;
       throw error;
     }
@@ -730,7 +771,7 @@ export const changePassword = async (
 
     if (!user.password || typeof user.password !== "string") {
       const error: CustomError = new Error(
-        'User does not have a password set. Please set a password first.'
+        'No password is set for this account. Please set a password first.'
       );
       error.statusCode = 400;
       throw error;
@@ -739,7 +780,7 @@ export const changePassword = async (
     const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
 
     if (!isOldPasswordValid) {
-      const error: CustomError = new Error('Old password is incorrect');
+      const error: CustomError = new Error('Current password is incorrect');
       error.statusCode = 401;
       throw error;
     }
@@ -754,7 +795,7 @@ export const changePassword = async (
 
     res.status(200).json({
       success: true,
-      message: 'Password changed successfully',
+      message: 'Password has been changed successfully',
     });
 
   } catch (error) {
@@ -789,7 +830,7 @@ export const addPassword = async (
     try {
       password = decrypt(encryptedPassword);
     } catch (decryptError) {
-      const error: CustomError = new Error('Failed to decrypt password. Invalid encryption.');
+      const error: CustomError = new Error('Failed to decrypt password. Please ensure the encryption key matches between frontend and backend.');
       error.statusCode = 400;
       throw error;
     }
@@ -801,7 +842,7 @@ export const addPassword = async (
     }
 
     if (password.length < 6) {
-      const error: CustomError = new Error('Password must be at least 6 characters long');
+      const error: CustomError = new Error('Password must be at least 6 characters in length');
       error.statusCode = 400;
       throw error;
     }
@@ -815,7 +856,7 @@ export const addPassword = async (
 
     if (user.password && typeof user.password === "string" && user.password.length > 0) {
       const error: CustomError = new Error(
-        'User already has a password set. Please use change-password endpoint to update it.'
+        'A password is already set for this account. Please use the change password endpoint to update it.'
       );
       error.statusCode = 400;
       throw error;
@@ -830,7 +871,7 @@ export const addPassword = async (
 
     res.status(200).json({
       success: true,
-      message: 'Password added successfully',
+      message: 'Password has been added successfully',
     });
 
   } catch (error) {
@@ -848,7 +889,7 @@ export const sendVerificationPhoneAPI = async (
     const { phone } = req.body;
 
     if (!phone) {
-      const error: CustomError = new Error('Phone is required');
+      const error: CustomError = new Error('Phone number is required');
       error.statusCode = 400;
       throw error;
     }
@@ -871,13 +912,13 @@ export const sendVerificationPhoneAPI = async (
 
     if (!isTwilioConfigured()) {
       if (process.env.NODE_ENV === 'production') {
-        const error: CustomError = new Error('SMS service is not configured. Please contact support.');
+        const error: CustomError = new Error('SMS service is not configured. Please contact support for assistance.');
         error.statusCode = 503;
         throw error;
       } else {
         res.status(200).json({
           success: true,
-          message: 'Verification code generated (Twilio not configured - dev mode)',
+          message: 'Verification code generated (development mode - SMS service not configured)',
           otp,
         });
         return;
@@ -888,7 +929,7 @@ export const sendVerificationPhoneAPI = async (
       await sendOTP(phoneNumber, otp);
       res.status(200).json({
         success: true,
-        message: 'Verification SMS sent successfully',
+        message: 'Verification SMS has been sent successfully. Please check your phone.',
         ...(process.env.NODE_ENV !== 'production' && { otp }),
       });
     } catch (smsError) {
@@ -900,7 +941,7 @@ export const sendVerificationPhoneAPI = async (
       } else {
         res.status(200).json({
           success: true,
-          message: 'Verification SMS failed to send (dev mode - OTP provided for testing)',
+          message: 'Verification SMS failed to send (development mode - OTP provided for testing)',
           otp,
         });
       }
@@ -926,7 +967,7 @@ export const verifyPhone = async (
     }
 
     if (!phone) {
-      const error: CustomError = new Error('Phone is required');
+      const error: CustomError = new Error('Phone number is required');
       error.statusCode = 400;
       throw error;
     }
@@ -969,7 +1010,7 @@ export const verifyPhone = async (
 
     res.status(200).json({
       success: true,
-      message: 'Phone verified successfully',
+      message: 'Phone number verified successfully',
       data: {
         phoneVerified: true,
       },
@@ -989,7 +1030,7 @@ export const resendVerificationPhone = async (
     const { phone } = req.body;
 
     if (!phone) {
-      const error: CustomError = new Error('Phone is required');
+      const error: CustomError = new Error('Phone number is required');
       error.statusCode = 400;
       throw error;
     }
@@ -1012,13 +1053,13 @@ export const resendVerificationPhone = async (
 
     if (!isTwilioConfigured()) {
       if (process.env.NODE_ENV === 'production') {
-        const error: CustomError = new Error('SMS service is not configured. Please contact support.');
+        const error: CustomError = new Error('SMS service is not configured. Please contact support for assistance.');
         error.statusCode = 503;
         throw error;
       } else {
         res.status(200).json({
           success: true,
-          message: 'Verification code generated (Twilio not configured - dev mode)',
+          message: 'Verification code generated (development mode - SMS service not configured)',
           otp,
         });
         return;
@@ -1029,7 +1070,7 @@ export const resendVerificationPhone = async (
       await sendOTP(phoneNumber, otp);
       res.status(200).json({
         success: true,
-        message: 'Verification SMS sent successfully',
+        message: 'Verification SMS has been sent successfully. Please check your phone.',
         ...(process.env.NODE_ENV !== 'production' && { otp }),
       });
     } catch (smsError) {
@@ -1041,7 +1082,7 @@ export const resendVerificationPhone = async (
       } else {
         res.status(200).json({
           success: true,
-          message: 'Verification SMS failed to send (dev mode - OTP provided for testing)',
+          message: 'Verification SMS failed to send (development mode - OTP provided for testing)',
           otp,
         });
       }
@@ -1070,13 +1111,13 @@ export const refreshToken = async (
     try {
       decoded = jwt.verify(providedRefreshToken, JWT_SECRET);
     } catch (err) {
-      const error: CustomError = new Error('Invalid or expired refresh token');
+      const error: CustomError = new Error('Invalid or expired refresh token. Please sign in again.');
       error.statusCode = 401;
       throw error;
     }
 
     if (decoded.type !== 'refresh') {
-      const error: CustomError = new Error('Invalid token type');
+      const error: CustomError = new Error('Invalid token type. Please use a valid refresh token.');
       error.statusCode = 401;
       throw error;
     }
@@ -1093,7 +1134,7 @@ export const refreshToken = async (
     }
 
     if (user.refreshToken !== providedRefreshToken) {
-      const error: CustomError = new Error('Invalid refresh token');
+      const error: CustomError = new Error('Invalid refresh token. Please sign in again.');
       error.statusCode = 401;
       throw error;
     }
@@ -1123,7 +1164,7 @@ export const refreshToken = async (
 
     res.status(200).json({
       success: true,
-      message: 'Token refreshed successfully',
+      message: 'Access token refreshed successfully',
       data: {
         token: newToken,
         refreshToken: newRefreshToken,
@@ -1144,7 +1185,7 @@ export const googleAuth = async (req: Request, res: Response): Promise<Response 
   const role = req.query.role as string;
 
   if (!role) {
-    return res.status(400).json({ message: "Role is required (patient | therapist)" });
+    return res.status(400).json({ message: "Role is required. Please specify either 'patient' or 'therapist'." });
   }
 
   const state = Buffer.from(JSON.stringify({ role })).toString("base64");
@@ -1180,7 +1221,7 @@ export const googleCallback = async (
     const state = req.query.state as string;
 
     if (!code || !state) {
-      res.status(400).send("Invalid Google auth session");
+      res.status(400).send("Invalid Google authentication session. Please try again.");
       return;
     }
 
@@ -1191,7 +1232,7 @@ export const googleCallback = async (
     pkceStore.delete(state);
 
     if (!session) {
-      res.status(400).send("Session expired");
+      res.status(400).send("Authentication session has expired. Please try again.");
       return;
     }
 

@@ -29,7 +29,7 @@ export const getOrCreateConversation = async (
     }
 
     if (participantId === currentUserId) {
-      const error: CustomError = new Error('Cannot create conversation with yourself');
+      const error: CustomError = new Error('You cannot create a conversation with yourself');
       error.statusCode = 400;
       throw error;
     }
@@ -54,7 +54,7 @@ export const getOrCreateConversation = async (
 
       res.status(200).json({
         success: true,
-        message: 'Conversation retrieved successfully',
+        message: 'Conversation information retrieved successfully',
         data: {
           ...existingConversation.toObject(),
           unreadCount,
@@ -147,7 +147,7 @@ export const getUserConversations = async (
 
     res.status(200).json({
       success: true,
-      message: 'Conversations retrieved successfully',
+      message: 'Your conversations retrieved successfully',
       data: formattedConversations,
       pagination: {
         page: pageNum,
@@ -404,7 +404,7 @@ export const markMessagesAsRead = async (
 
     res.status(200).json({
       success: true,
-      message: 'Messages marked as read successfully',
+      message: 'Messages have been marked as read',
       data: {
         messagesUpdated: result.modifiedCount,
       },
@@ -437,7 +437,7 @@ export const deleteMessage = async (
     });
 
     if (!message) {
-      const error: CustomError = new Error('Message not found or unauthorized');
+      const error: CustomError = new Error('Message not found or you do not have permission to delete it');
       error.statusCode = 404;
       throw error;
     }
@@ -447,7 +447,7 @@ export const deleteMessage = async (
 
     res.status(200).json({
       success: true,
-      message: 'Message deleted successfully',
+      message: 'Message has been deleted successfully',
     });
   } catch (error) {
     next(error);
@@ -487,7 +487,7 @@ export const deleteConversation = async (
 
     res.status(200).json({
       success: true,
-      message: 'Conversation deleted successfully',
+      message: 'Conversation has been deleted successfully',
     });
   } catch (error) {
     next(error);

@@ -4,6 +4,7 @@ import { User, IUser } from '../models/User';
 import Therapist from '../models/Therapist';
 import { CustomError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/authMiddleware';
+import { uploadToCloudinary } from '../middleware/uploadMiddleware';
 import bcrypt from 'bcrypt';
 
 // Create a new user
@@ -48,14 +49,14 @@ export const createUser = async (
 
     const validRoles = ['admin', 'therapist', 'patient', 'superAdmin', 'therapistManager', 'supportAgent', 'contentModerator'];
     if (role && !validRoles.includes(role)) {
-      const error: CustomError = new Error('Invalid role. Role must be one of: admin, therapist, patient, superAdmin, therapistManager, supportAgent, contentModerator');
+      const error: CustomError = new Error('Invalid role. Role must be one of: admin, therapist, patient, superAdmin, therapistManager, supportAgent, or contentModerator');
       error.statusCode = 400;
       throw error;
     }
 
     const existingUser = await User.findOne({ email: email.toLowerCase(), deletedAt: null });
     if (existingUser) {
-      const error: CustomError = new Error('User with this email already exists');
+      const error: CustomError = new Error('An account with this email address already exists');
       error.statusCode = 409;
       throw error;
     }
@@ -85,11 +86,30 @@ export const createUser = async (
     user.tokenVersion = 0;
     await user.save();
 
-    const { password: _, ...userResponse } = user.toObject();
+    const files = (req as any).files;
+    if (files && 'profilePhoto' in files) {
+      const file = Array.isArray(files.profilePhoto)
+        ? files.profilePhoto[0]
+        : files.profilePhoto;
+      if (file) {
+        const userId = (user._id as mongoose.Types.ObjectId).toString();
+        const baseFolder = `users/${userId}`;
+        try {
+          const result = await uploadToCloudinary(file, `${baseFolder}/profile-photos`);
+          user.profilePhoto = result.url;
+          await user.save();
+        } catch (uploadError) {
+          console.error('Profile photo upload error:', uploadError);
+        }
+      }
+    }
+
+    const updatedUser = await User.findById(user._id).select('-password');
+    const { password: _, ...userResponse } = updatedUser!.toObject();
 
     res.status(201).json({
       success: true,
-      message: 'User created successfully',
+      message: 'User account created successfully',
       data: userResponse,
     });
   } catch (error) {
@@ -158,7 +178,7 @@ export const getAllUsers = async (
 
     res.status(200).json({
       success: true,
-      message: 'Users fetched successfully',
+      message: 'Users retrieved successfully',
       data: {
         users,
         pagination: {
@@ -201,7 +221,7 @@ export const getUserById = async (
 
     res.status(200).json({
       success: true,
-      message: 'User fetched successfully',
+      message: 'User information retrieved successfully',
       data: user,
     });
   } catch (error) {
@@ -219,7 +239,7 @@ export const getCurrentUser = async (
     const userId = req.user?._id;
 
     if (!userId) {
-      const error: CustomError = new Error('User not authenticated');
+      const error: CustomError = new Error('User authentication required');
       error.statusCode = 401;
       throw error;
     }
@@ -242,7 +262,7 @@ export const getCurrentUser = async (
 
     res.status(200).json({
       success: true,
-      message: 'User fetched successfully',
+      message: 'User information retrieved successfully',
       data: user,
     });
   } catch (error) {
@@ -281,7 +301,7 @@ export const updateUser = async (
     }
 
     if (id !== userId && currentUser.role !== 'admin') {
-      const error: CustomError = new Error('Unauthorized: You can only update your own profile');
+      const error: CustomError = new Error('Unauthorized. You can only update your own profile');
       error.statusCode = 403;
       throw error;
     }
@@ -293,7 +313,7 @@ export const updateUser = async (
         deletedAt: null,
       });
       if (emailExists) {
-        const error: CustomError = new Error('Email already in use');
+        const error: CustomError = new Error('This email address is already in use by another account');
         error.statusCode = 409;
         throw error;
       }
@@ -311,6 +331,7 @@ export const updateUser = async (
       'timezone',
       'privacyPolicyAccepted',
       'termsOfServiceAccepted',
+      'profilePhoto',
     ];
 
     if (currentUser.role === 'admin' && req.body.role !== undefined) {
@@ -326,7 +347,7 @@ export const updateUser = async (
     if (currentUser.role === 'admin' && req.body.status !== undefined) {
       const validStatuses = ['active', 'inactive', 'pending', 'blocked', 'suspended'];
       if (!validStatuses.includes(req.body.status)) {
-        const error: CustomError = new Error('Invalid status. Status must be one of: active, inactive, pending, blocked, suspended');
+        const error: CustomError = new Error('Invalid status. Status must be one of: active, inactive, pending, blocked, or suspended');
         error.statusCode = 400;
         throw error;
       }
@@ -345,13 +366,34 @@ export const updateUser = async (
 
     if (req.body.password) {
       if (req.body.password.length < 6) {
-        const error: CustomError = new Error('Password must be at least 6 characters long');
+        const error: CustomError = new Error('Password must be at least 6 characters in length');
         error.statusCode = 400;
         throw error;
       }
       const saltRounds = 10;
       updateData.password = await bcrypt.hash(req.body.password, saltRounds);
       updateData.tokenVersion = (user.tokenVersion || 0) + 1;
+    }
+
+    const files = (req as any).files;
+    if (files && 'profilePhoto' in files) {
+      const file = Array.isArray(files.profilePhoto)
+        ? files.profilePhoto[0]
+        : files.profilePhoto;
+      if (file) {
+        const userId = id;
+        const baseFolder = `users/${userId}`;
+        try {
+          const result = await uploadToCloudinary(file, `${baseFolder}/profile-photos`);
+          updateData.profilePhoto = result.url;
+        } catch (uploadError) {
+          const error: CustomError = new Error(`Failed to upload profile photo: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
+          error.statusCode = 500;
+          throw error;
+        }
+      }
+    } else if (req.body.profilePhoto !== undefined) {
+      updateData.profilePhoto = req.body.profilePhoto || null;
     }
 
     const updatedUser = await User.findByIdAndUpdate(
@@ -363,7 +405,7 @@ export const updateUser = async (
       .populate('therapist', 'firstName lastName email');
 
     if (!updatedUser) {
-      const error: CustomError = new Error('Failed to update user');
+      const error: CustomError = new Error('Failed to update user information. Please try again.');
       error.statusCode = 500;
       throw error;
     }
@@ -413,7 +455,7 @@ export const updateUser = async (
 
     res.status(200).json({
       success: true,
-      message: 'User updated successfully',
+      message: 'User information updated successfully',
       data: updatedUser,
     });
   } catch (error) {
@@ -452,7 +494,7 @@ export const deleteUser = async (
     }
 
     if (id !== userId && currentUser.role !== 'admin') {
-      const error: CustomError = new Error('Unauthorized: You can only delete your own profile');
+      const error: CustomError = new Error('Unauthorized. You can only delete your own profile');
       error.statusCode = 403;
       throw error;
     }
@@ -465,7 +507,7 @@ export const deleteUser = async (
 
     res.status(200).json({
       success: true,
-      message: 'User deleted successfully',
+      message: 'User account deleted successfully',
     });
   } catch (error) {
     next(error);
@@ -508,7 +550,7 @@ export const deleteCurrentUser = async (
       $inc: { tokenVersion: 1 }
     });
 
-    res.status(200).json({ success: true, message: "Account deleted successfully" });
+    res.status(200).json({ success: true, message: "Your account has been deleted successfully" });
 
   } catch (error: any) {
     next({ statusCode: error.statusCode || 500, message: error.message });

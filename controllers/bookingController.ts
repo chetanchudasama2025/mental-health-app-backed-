@@ -23,13 +23,13 @@ export const createBooking = async (
     }
 
     if (![30, 45, 60].includes(duration)) {
-      const error: CustomError = new Error('Duration must be 30, 45, or 60 minutes');
+      const error: CustomError = new Error('Session duration must be 30, 45, or 60 minutes');
       error.statusCode = 400;
       throw error;
     }
 
     if (!payment || !payment.amount || !payment.paymentIntentId || !payment.clientSecret) {
-      const error: CustomError = new Error('Payment information (amount, paymentIntentId, and clientSecret) is required');
+      const error: CustomError = new Error('Payment information is required. Please provide amount, paymentIntentId, and clientSecret');
       error.statusCode = 400;
       throw error;
     }
@@ -56,7 +56,7 @@ export const createBooking = async (
     }
 
     if (therapist.user.toString() === patientId) {
-      const error: CustomError = new Error('Cannot book a session with yourself');
+      const error: CustomError = new Error('You cannot book a session with yourself');
       error.statusCode = 400;
       throw error;
     }
@@ -74,7 +74,7 @@ export const createBooking = async (
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     if (normalizedDate < now) {
-      const error: CustomError = new Error('Cannot book a session in the past');
+      const error: CustomError = new Error('You cannot book a session for a past date');
       error.statusCode = 400;
       throw error;
     }
@@ -94,7 +94,7 @@ export const createBooking = async (
     });
 
     if (existingBooking) {
-      const error: CustomError = new Error('This time slot is already booked');
+      const error: CustomError = new Error('This time slot is already booked. Please select another time.');
       error.statusCode = 409;
       throw error;
     }
@@ -142,7 +142,7 @@ export const createBooking = async (
 
     res.status(201).json({
       success: true,
-      message: 'Booking created successfully',
+      message: 'Session booking created successfully',
       data: booking,
     });
   } catch (error) {
@@ -219,7 +219,7 @@ export const getAllBookings = async (
 
     res.status(200).json({
       success: true,
-      message: 'Bookings fetched successfully',
+      message: 'Bookings retrieved successfully',
       data: {
         bookings,
         pagination: {
@@ -263,7 +263,7 @@ export const getBookingById = async (
 
     res.status(200).json({
       success: true,
-      message: 'Booking fetched successfully',
+      message: 'Booking information retrieved successfully',
       data: booking,
     });
   } catch (error) {
@@ -328,7 +328,7 @@ export const getBookingsByTherapist = async (
 
     res.status(200).json({
       success: true,
-      message: 'Therapist bookings fetched successfully',
+      message: 'Therapist bookings retrieved successfully',
       data: {
         bookings,
         pagination: {
@@ -394,7 +394,7 @@ export const getMyBookings = async (
 
     res.status(200).json({
       success: true,
-      message: 'Your bookings fetched successfully',
+      message: 'Your bookings retrieved successfully',
       data: {
         bookings,
         pagination: {
@@ -468,7 +468,7 @@ export const updateBooking = async (
 
     if (duration) {
       if (![30, 45, 60].includes(duration)) {
-        const error: CustomError = new Error('Duration must be 30, 45, or 60 minutes');
+        const error: CustomError = new Error('Session duration must be 30, 45, or 60 minutes');
         error.statusCode = 400;
         throw error;
       }
@@ -504,7 +504,7 @@ export const updateBooking = async (
 
     res.status(200).json({
       success: true,
-      message: 'Booking updated successfully',
+      message: 'Booking information updated successfully',
       data: booking,
     });
   } catch (error) {
@@ -536,13 +536,13 @@ export const cancelBooking = async (
     }
 
     if (booking.status === 'cancelled') {
-      const error: CustomError = new Error('Booking is already cancelled');
+      const error: CustomError = new Error('This booking has already been cancelled');
       error.statusCode = 400;
       throw error;
     }
 
     if (booking.status === 'completed') {
-      const error: CustomError = new Error('Cannot cancel a completed booking');
+      const error: CustomError = new Error('You cannot cancel a booking that has already been completed');
       error.statusCode = 400;
       throw error;
     }
@@ -578,7 +578,7 @@ export const cancelBooking = async (
 
     res.status(200).json({
       success: true,
-      message: 'Booking cancelled successfully',
+      message: 'Booking has been cancelled successfully',
       data: booking,
     });
   } catch (error) {
@@ -616,7 +616,7 @@ export const deleteBooking = async (
     }
 
     if (booking.status === 'completed') {
-      const error: CustomError = new Error('Cannot delete a completed booking');
+      const error: CustomError = new Error('You cannot delete a booking that has already been completed');
       error.statusCode = 400;
       throw error;
     }
@@ -637,7 +637,7 @@ export const deleteBooking = async (
 
     res.status(200).json({
       success: true,
-      message: 'Booking deleted successfully',
+      message: 'Booking has been deleted successfully',
     });
   } catch (error) {
     next(error);

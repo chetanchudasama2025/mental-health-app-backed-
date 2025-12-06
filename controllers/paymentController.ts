@@ -31,13 +31,13 @@ export const createPayment = async (
         }
 
         if (amount <= 0) {
-            const error: CustomError = new Error('Amount must be greater than 0');
+            const error: CustomError = new Error('Payment amount must be greater than zero');
             error.statusCode = 400;
             throw error;
         }
 
         if (status && !['pending', 'succeeded', 'failed', 'refunded'].includes(status)) {
-            const error: CustomError = new Error('Invalid status. Status must be one of: pending, succeeded, failed, refunded');
+            const error: CustomError = new Error('Invalid payment status. Status must be one of: pending, succeeded, failed, or refunded');
             error.statusCode = 400;
             throw error;
         }
@@ -62,7 +62,7 @@ export const createPayment = async (
         });
 
         if (existingPayment) {
-            const error: CustomError = new Error('Payment with this paymentIntentId already exists');
+            const error: CustomError = new Error('A payment with this paymentIntentId already exists');
             error.statusCode = 409;
             throw error;
         }
@@ -85,7 +85,7 @@ export const createPayment = async (
 
         res.status(201).json({
             success: true,
-            message: 'Payment created successfully',
+            message: 'Payment record created successfully',
             data: payment,
         });
     } catch (error) {
@@ -175,7 +175,7 @@ export const getAllPayments = async (
 
         res.status(200).json({
             success: true,
-            message: 'Payments fetched successfully',
+            message: 'Payments retrieved successfully',
             data: {
                 payments,
                 pagination: {
@@ -217,7 +217,7 @@ export const getPaymentById = async (
 
         res.status(200).json({
             success: true,
-            message: 'Payment fetched successfully',
+            message: 'Payment information retrieved successfully',
             data: payment,
         });
     } catch (error) {
@@ -304,7 +304,7 @@ export const getMyPayments = async (
 
         res.status(200).json({
             success: true,
-            message: 'Your payments fetched successfully',
+            message: 'Your payment history retrieved successfully',
             data: {
                 payments,
                 pagination: {
@@ -406,7 +406,7 @@ export const getPaymentsByUserId = async (
 
         res.status(200).json({
             success: true,
-            message: 'User payments fetched successfully',
+            message: 'User payment history retrieved successfully',
             data: {
                 payments,
                 pagination: {
@@ -476,7 +476,7 @@ export const updatePayment = async (
 
         if (status !== undefined) {
             if (!['pending', 'succeeded', 'failed', 'refunded'].includes(status)) {
-                const error: CustomError = new Error('Invalid status. Status must be one of: pending, succeeded, failed, refunded');
+                const error: CustomError = new Error('Invalid payment status. Status must be one of: pending, succeeded, failed, or refunded');
                 error.statusCode = 400;
                 throw error;
             }
@@ -504,7 +504,7 @@ export const updatePayment = async (
 
         res.status(200).json({
             success: true,
-            message: 'Payment updated successfully',
+            message: 'Payment information updated successfully',
             data: payment,
         });
     } catch (error) {
@@ -562,7 +562,7 @@ export const deletePayment = async (
 
         res.status(200).json({
             success: true,
-            message: 'Payment deleted successfully',
+            message: 'Payment record deleted successfully',
         });
     } catch (error) {
         next(error);
