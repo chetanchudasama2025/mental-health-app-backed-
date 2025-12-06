@@ -1,22 +1,22 @@
-import { Request, Response, NextFunction } from 'express';
+import {NextFunction, Request, Response} from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
+import crypto, {createHash, randomBytes} from 'crypto';
 import mongoose from 'mongoose';
-import { User } from '../models/User';
-import { PasswordResetToken } from '../models/PasswordResetToken';
-import { EmailVerificationToken } from '../models/EmailVerificationToken';
-import { PhoneVerificationToken } from '../models/PhoneVerificationToken';
+import {User} from '../models/User';
+import {PasswordResetToken} from '../models/PasswordResetToken';
+import {EmailVerificationToken} from '../models/EmailVerificationToken';
+import {PhoneVerificationToken} from '../models/PhoneVerificationToken';
 import Therapist from '../models/Therapist';
-import { CustomError } from '../middleware/errorHandler';
-import { AuthRequest } from '../middleware/authMiddleware';
+import {CustomError} from '../middleware/errorHandler';
+import {AuthRequest} from '../middleware/authMiddleware';
 import nodemailer from 'nodemailer';
-import { getForgotPasswordEmailTemplate } from '../templates/forgotPasswordEmail';
-import { getEmailVerificationEmailTemplate } from '../templates/emailVerificationEmail';
-import { sendOTP, isTwilioConfigured } from '../config/twilio';
-import { decryptCredentials, decrypt } from '../utils/decryption';
-import { randomBytes, createHash } from 'crypto';
+import {getForgotPasswordEmailTemplate} from '../templates/forgotPasswordEmail';
+import {getEmailVerificationEmailTemplate} from '../templates/emailVerificationEmail';
+import {isTwilioConfigured, sendOTP} from '../config/twilio';
+import {decrypt, decryptCredentials} from '../utils/decryption';
 import dotenv from 'dotenv';
+
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -410,7 +410,7 @@ export const forgotPassword = async (
       expiresAt,
     });
 
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+    const resetLink = `${process.env.FRONTEND_URL}/auth/forgotPassword?token=${resetToken}`;
 
     try {
       const transporter = createTransporter();
