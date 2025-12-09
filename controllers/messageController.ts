@@ -1,10 +1,10 @@
-import { Response, NextFunction } from 'express';
+import {NextFunction, Response} from 'express';
 import mongoose from 'mongoose';
-import { Conversation } from '../models/Conversation';
-import { Message } from '../models/Message';
-import { User } from '../models/User';
-import { CustomError } from '../middleware/errorHandler';
-import { AuthRequest } from '../middleware/authMiddleware';
+import {Conversation} from '../models/Conversation';
+import {Message} from '../models/Message';
+import {User} from '../models/User';
+import {CustomError} from '../middleware/errorHandler';
+import {AuthRequest} from '../middleware/authMiddleware';
 
 // Get or create a conversation between two users
 export const getOrCreateConversation = async (

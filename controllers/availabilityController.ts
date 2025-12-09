@@ -1,10 +1,10 @@
-import { Request, Response, NextFunction } from 'express';
+import {NextFunction, Request, Response} from 'express';
 import mongoose from 'mongoose';
-import Availability, { IAvailability } from '../models/Availability';
+import Availability, {IAvailability} from '../models/Availability';
 import Therapist from '../models/Therapist';
-import { User } from '../models/User';
-import { CustomError } from '../middleware/errorHandler';
-import { AuthRequest } from '../middleware/authMiddleware';
+import {User} from '../models/User';
+import {CustomError} from '../middleware/errorHandler';
+import {AuthRequest} from '../middleware/authMiddleware';
 
 // Create a new availability
 export const createAvailability = async (

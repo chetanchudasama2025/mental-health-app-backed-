@@ -1,15 +1,15 @@
-import { Router } from 'express';
+import {Router} from 'express';
 import {
   createPayment,
+  deletePayment,
   getAllPayments,
-  getPaymentById,
   getMyPayments,
+  getPaymentById,
   getPaymentsByUserId,
   updatePayment,
-  deletePayment,
 } from '../controllers/paymentController';
-import { authenticate } from '../middleware/authMiddleware';
-import { checkPermission, requireRole } from '../middleware/rbacMiddleware';
+import {authenticate} from '../middleware/authMiddleware';
+import {checkPermission, requireRole} from '../middleware/rbacMiddleware';
 
 const router = Router();
 

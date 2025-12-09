@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "mental-health-app-api",
 		"name": "Mental Health App API",
-		"description": "Complete API collection for Mental Health Application Backend\n\n## RBAC (Role-Based Access Control)\n\nThis API uses CASL for role-based access control with multiple roles:\n\n### Admin Role\n- Full access to all resources and actions\n- Can manage users, therapists, bookings, payments, messages, notifications, support tickets, and availability\n- Can update user status, roles, and therapist status\n\n### SuperAdmin Role\n- Full administrative access (same as Admin)\n\n### TherapistManager Role\n- Can manage therapists and their profiles\n- Can update therapist status and review notes\n\n### SupportAgent Role\n- Can manage support tickets\n- Can assist with user issues\n\n### ContentModerator Role\n- Can moderate content and review therapist profiles\n\n### Therapist Role\n- Own profile management (read/update)\n- Own therapist profile (read/create/update)\n- Availability management (full control)\n- Bookings for their sessions (read/update)\n- Payments (read-only)\n- Messages/Conversations (full access)\n- Notifications (own)\n- Support tickets (create/read/update own)\n\n### Patient Role\n- Own profile management (read/update)\n- Therapist profiles (read-only, public)\n- Availability (read-only)\n- Own bookings (full control)\n- Own payments (full control)\n- Messages/Conversations (full access)\n- Notifications (own)\n- Support tickets (create/read/update own)\n\n### Authentication\n- Most endpoints require a Bearer token in the Authorization header\n- Token is obtained via `/api/auth/login` or `/api/auth/register`\n- Use `{{authToken}}` variable for authenticated requests\n- Role-specific tokens: `{{adminToken}}`, `{{therapistToken}}`, `{{patientToken}}`\n\n### User Status\n- Users have status: active, inactive, pending, blocked, suspended (default: active for OAuth, pending for registration)\n- New registrations start with status: pending\n\n### Therapist Status\n- Therapists have status: approved, pending, rejected, underReview (default: pending)\n- Only admins can update therapist status",
+		"description": "# Mental Health Application - Backend API Collection\n\nComplete API collection for Mental Health Application Backend organized by project modules.\n\n## 📋 Collection Structure\n\nThis collection is organized by project modules:\n\n1. **Health Check** - Server health monitoring\n2. **Authentication** - User registration, login, OAuth, password management, email/phone verification\n3. **Users** - User profile management (CRUD operations)\n4. **Therapists** - Therapist profile management and verification\n5. **Availabilities** - Therapist availability scheduling and management\n6. **Bookings** - Session booking system\n7. **Payments** - Payment processing and management\n8. **Messages** - Conversations and messaging system\n9. **Notifications** - In-app notification system\n10. **Support Tickets** - Customer support ticket system\n11. **Reviews** - Therapist reviews and ratings system\n\n## 🔐 RBAC (Role-Based Access Control)\n\nThis API uses CASL for role-based access control with multiple roles:\n\n### Admin Role\n- Full access to all resources and actions\n- Can manage users, therapists, bookings, payments, messages, notifications, support tickets, reviews, and availability\n- Can update user status, roles, and therapist status\n\n### SuperAdmin Role\n- Full administrative access (same as Admin)\n\n### TherapistManager Role\n- Can manage therapists and their profiles\n- Can update therapist status and review notes\n\n### SupportAgent Role\n- Can manage support tickets\n- Can assist with user issues\n\n### ContentModerator Role\n- Can moderate content and review therapist profiles\n- Can manage reviews (approve, reject, update status)\n\n### Therapist Role\n- Own profile management (read/update)\n- Own therapist profile (read/create/update)\n- Availability management (full control)\n- Bookings for their sessions (read/update)\n- Payments (read-only)\n- Messages/Conversations (full access)\n- Notifications (own)\n- Support tickets (create/read/update own)\n\n### Patient Role\n- Own profile management (read/update)\n- Therapist profiles (read-only, public)\n- Availability (read-only)\n- Own bookings (full control)\n- Own payments (full control)\n- Messages/Conversations (full access)\n- Notifications (own)\n- Support tickets (create/read/update own)\n- Reviews (create/read/update own pending reviews, read approved reviews)\n\n## 🔑 Authentication\n\n- Most endpoints require a Bearer token in the Authorization header\n- Token is obtained via `/api/auth/login` or `/api/auth/register`\n- Use `{{authToken}}` variable for authenticated requests\n- Role-specific tokens: `{{adminToken}}`, `{{therapistToken}}`, `{{patientToken}}`\n- Refresh tokens available for token rotation\n\n## 📝 User Status\n\n- Users have status: active, inactive, pending, blocked, suspended (default: active for OAuth, pending for registration)\n- New registrations start with status: pending\n\n## 👨‍⚕️ Therapist Status\n\n- Therapists have status: approved, pending, rejected, underReview (default: pending)\n- Only admins can update therapist status\n\n## 🌐 Base URL\n\nDefault base URL: `http://localhost:3000`\n\nSet the `{{baseUrl}}` variable in your Postman environment to change the base URL.\n\n## 📚 Usage\n\n1. Import this collection into Postman\n2. Set the `baseUrl` variable (default: `http://localhost:3000`)\n3. Start with Authentication endpoints to register/login and get tokens\n4. Tokens are automatically saved to `{{authToken}}` variable\n5. Use the organized folders to test each module",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -900,6 +900,125 @@
 							]
 						},
 						"description": "Get all therapists with search and filter options applied."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Approved Therapists (Patient Listing)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/therapists/approved?page=1&limit=10&search=&specialization=&language=&minPrice=&maxPrice=&serviceEnabled=",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"therapists",
+								"approved"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number (default: 1)"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Items per page (default: 10)"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"description": "Search in firstName, lastName, email, or bio",
+									"disabled": true
+								},
+								{
+									"key": "specialization",
+									"value": "",
+									"description": "Filter by specialization(s). Accepts comma-separated string or array (e.g., 'CBT,DBT' or ['CBT','DBT'])",
+									"disabled": true
+								},
+								{
+									"key": "language",
+									"value": "",
+									"description": "Filter by language(s). Accepts comma-separated string or array (e.g., 'English,Spanish' or ['English','Spanish'])",
+									"disabled": true
+								},
+								{
+									"key": "minPrice",
+									"value": "",
+									"description": "Minimum price filter (filters by therapist availability price)",
+									"disabled": true
+								},
+								{
+									"key": "maxPrice",
+									"value": "",
+									"description": "Maximum price filter (filters by therapist availability price)",
+									"disabled": true
+								},
+								{
+									"key": "serviceEnabled",
+									"value": "",
+									"description": "Filter by service enabled status (true/false). Filters by therapist availability serviceEnabled field",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get only approved therapists with their availability information. This endpoint is designed for patient-side therapist listing.\n\n**Key Features:**\n- Only returns therapists with status: 'approved'\n- Includes availability information for each therapist\n- Supports multiple filter combinations\n- Optimized for patient-facing therapist discovery\n\n**Filter Parameters:**\n- `search`: Search in firstName, lastName, email, or bio\n- `specialization`: Filter by one or more specializations (comma-separated or array)\n- `language`: Filter by one or more languages (comma-separated or array)\n- `minPrice`: Minimum session price (filters by availability.price)\n- `maxPrice`: Maximum session price (filters by availability.price)\n- `serviceEnabled`: Filter by whether service is enabled (true/false)\n\n**Example Usage:**\n- Basic: `/api/therapists/approved`\n- With filters: `/api/therapists/approved?specialization=CBT,DBT&language=English&minPrice=50&maxPrice=200&serviceEnabled=true`\n- Multiple specializations: `/api/therapists/approved?specialization=CBT&specialization=DBT`\n\n**Response:**\nReturns therapists array with availability object included for each therapist. If pricing or serviceEnabled filters are applied, only therapists with matching availability are returned.\n\nNo authentication required."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Approved Therapists (With Filters Example)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/therapists/approved?page=1&limit=20&specialization=CBT,DBT&language=English&minPrice=50&maxPrice=200&serviceEnabled=true",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"therapists",
+								"approved"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "specialization",
+									"value": "CBT,DBT",
+									"description": "Multiple specializations (comma-separated)"
+								},
+								{
+									"key": "language",
+									"value": "English"
+								},
+								{
+									"key": "minPrice",
+									"value": "50"
+								},
+								{
+									"key": "maxPrice",
+									"value": "200"
+								},
+								{
+									"key": "serviceEnabled",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Example request showing how to use multiple filters together to find approved therapists matching specific criteria."
 					},
 					"response": []
 				},
@@ -4353,6 +4472,532 @@
 							]
 						},
 						"description": "Delete a notification (hard delete). Requires authentication. Only the owner of the notification can delete it."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Reviews",
+			"item": [
+				{
+					"name": "Create Review",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "therapistId",
+									"value": "therapist-id-here",
+									"type": "text",
+									"description": "Therapist MongoDB ObjectId (required)"
+								},
+								{
+									"key": "rating",
+									"value": "5",
+									"type": "text",
+									"description": "Rating (1-5, integer, required)"
+								},
+								{
+									"key": "review",
+									"value": "Great therapist! Very helpful and understanding.",
+									"type": "text",
+									"description": "Review text (10-2000 characters, required)"
+								},
+								{
+									"key": "sessionId",
+									"value": "session-id-here",
+									"type": "text",
+									"description": "Booking/Session MongoDB ObjectId (required)"
+								},
+								{
+									"key": "isAnonymous",
+									"value": "false",
+									"type": "text",
+									"description": "Whether review is anonymous (true/false, default: false)"
+								},
+								{
+									"key": "remarks",
+									"value": "",
+									"type": "text",
+									"description": "Additional remarks (optional)",
+									"disabled": true
+								},
+								{
+									"key": "attachments",
+									"type": "file",
+									"description": "Review attachment files (max 5 files, optional)",
+									"disabled": true
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/reviews",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"reviews"
+							]
+						},
+						"description": "Create a new therapist review. Requires authentication. Only patients who have completed a session with the therapist can create a review.\n\n**Required fields:**\n- therapistId: Therapist MongoDB ObjectId\n- rating: Integer between 1 and 5\n- review: Review text (10-2000 characters)\n- sessionId: Completed booking/session MongoDB ObjectId\n\n**Optional fields:**\n- isAnonymous: Boolean (default: false)\n- remarks: Additional remarks\n- attachments: Up to 5 attachment files (images, documents, etc.)\n\n**Validation:**\n- Session must exist and belong to the reviewer\n- Session must be completed (status: 'completed')\n- Therapist ID must match the session therapist\n- Only one review per session allowed\n- Review starts with status: 'pending' (requires admin approval)\n\n**File Uploads:**\n- Supports multiple file types (images, documents)\n- Maximum 5 files\n- Files are uploaded to Cloudinary\n- File URLs are stored in the review's attachments array"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Reviews (Admin/Moderator)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reviews?page=1&limit=10&therapistId=&reviewerId=&status=&rating=&minRating=&maxRating=&search=",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"reviews"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number (default: 1)"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Items per page (default: 10)"
+								},
+								{
+									"key": "therapistId",
+									"value": "",
+									"description": "Filter by therapist ID",
+									"disabled": true
+								},
+								{
+									"key": "reviewerId",
+									"value": "",
+									"description": "Filter by reviewer ID",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "",
+									"description": "Filter by status (pending, approved, rejected)",
+									"disabled": true
+								},
+								{
+									"key": "rating",
+									"value": "",
+									"description": "Filter by exact rating (1-5)",
+									"disabled": true
+								},
+								{
+									"key": "minRating",
+									"value": "",
+									"description": "Minimum rating filter (1-5)",
+									"disabled": true
+								},
+								{
+									"key": "maxRating",
+									"value": "",
+									"description": "Maximum rating filter (1-5)",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "",
+									"description": "Search in review text and remarks",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get all reviews with filters and pagination. Requires authentication with admin, superAdmin, or contentModerator role. Returns reviews sorted by creation date (newest first).\n\n**Available filters:**\n- therapistId: Filter by specific therapist\n- reviewerId: Filter by specific reviewer\n- status: Filter by review status (pending, approved, rejected)\n- rating: Filter by exact rating (1-5)\n- minRating: Minimum rating (1-5)\n- maxRating: Maximum rating (1-5)\n- search: Search in review text and remarks (case-insensitive)\n\n**Response includes:**\n- reviews: Array of review objects with populated therapist, reviewer, and sessionId\n- pagination: Page, limit, total, and pages information"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Reviews (With Filters)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reviews?page=1&limit=10&status=pending&minRating=4&search=helpful",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"reviews"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "status",
+									"value": "pending"
+								},
+								{
+									"key": "minRating",
+									"value": "4"
+								},
+								{
+									"key": "search",
+									"value": "helpful"
+								}
+							]
+						},
+						"description": "Get all reviews with multiple filters applied. Returns pending reviews with rating 4 or higher containing 'helpful' in the text."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Reviews by Therapist",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reviews/therapist/:therapistId?page=1&limit=10&status=approved&minRating=",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"reviews",
+								"therapist",
+								":therapistId"
+							],
+							"variable": [
+								{
+									"key": "therapistId",
+									"value": "therapist-id-here",
+									"description": "Therapist MongoDB ObjectId"
+								}
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number (default: 1)"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Items per page (default: 10)"
+								},
+								{
+									"key": "status",
+									"value": "approved",
+									"description": "Review status filter (default: approved)"
+								},
+								{
+									"key": "minRating",
+									"value": "",
+									"description": "Minimum rating filter (1-5)",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get all reviews for a specific therapist. This is a public endpoint (no authentication required). By default, returns only approved reviews.\n\n**Query Parameters:**\n- page: Page number (default: 1)\n- limit: Items per page (default: 10)\n- status: Review status filter (default: 'approved')\n- minRating: Minimum rating filter (1-5)\n\n**Response includes:**\n- reviews: Array of approved reviews for the therapist\n- stats: Statistics including:\n  - averageRating: Average rating (rounded to 1 decimal)\n  - totalReviews: Total number of approved reviews\n  - distribution: Rating distribution (count of 5, 4, 3, 2, 1 star ratings)\n- pagination: Page, limit, total, and pages information"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Reviews",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reviews/me?page=1&limit=10&status=",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"reviews",
+								"me"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number (default: 1)"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Items per page (default: 10)"
+								},
+								{
+									"key": "status",
+									"value": "",
+									"description": "Filter by status (pending, approved, rejected)",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get all reviews created by the authenticated user. Requires authentication. Returns reviews sorted by creation date (newest first).\n\n**Query Parameters:**\n- page: Page number (default: 1)\n- limit: Items per page (default: 10)\n- status: Filter by review status (pending, approved, rejected)\n\n**Response includes:**\n- reviews: Array of user's reviews with populated therapist and sessionId\n- pagination: Page, limit, total, and pages information"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Review by ID",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reviews/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"reviews",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "review-id-here",
+									"description": "Review MongoDB ObjectId"
+								}
+							]
+						},
+						"description": "Get a single review by ID. Requires authentication. Returns the review with populated therapist, reviewer, and sessionId information."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Review",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "rating",
+									"value": "5",
+									"type": "text",
+									"description": "Rating (1-5, integer, optional)",
+									"disabled": true
+								},
+								{
+									"key": "review",
+									"value": "Updated review text here...",
+									"type": "text",
+									"description": "Review text (10-2000 characters, optional)",
+									"disabled": true
+								},
+								{
+									"key": "isAnonymous",
+									"value": "false",
+									"type": "text",
+									"description": "Whether review is anonymous (true/false, optional)",
+									"disabled": true
+								},
+								{
+									"key": "remarks",
+									"value": "",
+									"type": "text",
+									"description": "Additional remarks (optional)",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "approved",
+									"type": "text",
+									"description": "Review status (pending, approved, rejected) - Admin only",
+									"disabled": true
+								},
+								{
+									"key": "attachments",
+									"type": "file",
+									"description": "Review attachment files (max 5 files, optional)",
+									"disabled": true
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/reviews/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"reviews",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "review-id-here",
+									"description": "Review MongoDB ObjectId"
+								}
+							]
+						},
+						"description": "Update a review. Requires authentication.\n\n**Permissions:**\n- Reviewers can update their own pending reviews (rating, review text, isAnonymous, remarks, attachments)\n- Admins/Moderators can update review status and remarks for any review\n\n**Reviewer Updates (pending reviews only):**\n- rating: Integer between 1 and 5\n- review: Review text (10-2000 characters)\n- isAnonymous: Boolean\n- remarks: Additional remarks\n- attachments: Up to 5 attachment files\n\n**Admin Updates:**\n- status: Review status (pending, approved, rejected)\n- remarks: Admin remarks\n\n**Validation:**\n- Reviewers can only update pending reviews\n- Once approved or rejected, only admins can update the status\n- Rating must be between 1 and 5\n- Review text must be 10-2000 characters\n\n**File Uploads:**\n- New files are added to existing attachments\n- If attachments field is provided in body, it replaces existing attachments\n- Maximum 5 files per review"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Review Status (Admin)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{adminToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "status",
+									"value": "approved",
+									"type": "text",
+									"description": "Review status (pending, approved, rejected)"
+								},
+								{
+									"key": "remarks",
+									"value": "Review approved after moderation",
+									"type": "text",
+									"description": "Admin remarks (optional)"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/reviews/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"reviews",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "review-id-here",
+									"description": "Review MongoDB ObjectId"
+								}
+							]
+						},
+						"description": "Update review status (admin/moderator only). Requires authentication with admin, superAdmin, or contentModerator role.\n\n**Status Options:**\n- pending: Review is awaiting moderation\n- approved: Review is approved and visible to public\n- rejected: Review is rejected and not visible\n\n**Response:**\n- Returns updated review with populated therapist, reviewer, and sessionId"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Review",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{authToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reviews/:id",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"reviews",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "review-id-here",
+									"description": "Review MongoDB ObjectId"
+								}
+							]
+						},
+						"description": "Delete a review (soft delete). Requires authentication.\n\n**Permissions:**\n- Reviewers can delete their own reviews\n- Admins/Moderators can delete any review\n\n**Note:**\n- This is a soft delete (sets deletedAt timestamp)\n- Deleted reviews are not returned in queries\n- Review data is preserved for audit purposes"
 					},
 					"response": []
 				}

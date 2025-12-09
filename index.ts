@@ -1,11 +1,11 @@
-import express, { Application } from 'express';
+ import express, {Application} from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { createServer } from 'http';
-import { errorHandler } from './middleware/errorHandler';
-import { logger } from './middleware/logger';
-import { routes } from './routes/index';
-import { connectDatabase } from './config/database';
+import {createServer} from 'http';
+import {errorHandler} from './middleware/errorHandler';
+import {logger} from './middleware/logger';
+import {routes} from './routes/index';
+import {connectDatabase} from './config/database';
 
 dotenv.config();                              
 

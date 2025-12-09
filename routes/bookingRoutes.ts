@@ -1,16 +1,16 @@
-import { Router } from 'express';
+import {Router} from 'express';
 import {
+  cancelBooking,
   createBooking,
+  deleteBooking,
   getAllBookings,
   getBookingById,
   getBookingsByTherapist,
   getMyBookings,
   updateBooking,
-  cancelBooking,
-  deleteBooking,
 } from '../controllers/bookingController';
-import { authenticate } from '../middleware/authMiddleware';
-import { checkPermission, requireRole } from '../middleware/rbacMiddleware';
+import {authenticate} from '../middleware/authMiddleware';
+import {checkPermission, requireRole} from '../middleware/rbacMiddleware';
 
 const router = Router();
 

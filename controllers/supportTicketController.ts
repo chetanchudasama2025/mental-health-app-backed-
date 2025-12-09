@@ -1,9 +1,9 @@
-import { Request, Response, NextFunction } from 'express';
+import {NextFunction, Request, Response} from 'express';
 import mongoose from 'mongoose';
-import { SupportTicket, ISupportTicket } from '../models/SupportTicket';
-import { CustomError } from '../middleware/errorHandler';
-import { AuthRequest } from '../middleware/authMiddleware';
-import { uploadToCloudinary } from '../middleware/uploadMiddleware';
+import {ISupportTicket, SupportTicket} from '../models/SupportTicket';
+import {CustomError} from '../middleware/errorHandler';
+import {AuthRequest} from '../middleware/authMiddleware';
+import {uploadToCloudinary} from '../middleware/uploadMiddleware';
 
 // Create a new support ticket
 export const createSupportTicket = async (

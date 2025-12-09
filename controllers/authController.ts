@@ -1,27 +1,28 @@
-import {NextFunction, Request, Response} from 'express';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import crypto, {createHash, randomBytes} from 'crypto';
-import mongoose from 'mongoose';
-import {User} from '../models/User';
-import {PasswordResetToken} from '../models/PasswordResetToken';
-import {EmailVerificationToken} from '../models/EmailVerificationToken';
-import {PhoneVerificationToken} from '../models/PhoneVerificationToken';
-import Therapist from '../models/Therapist';
-import {CustomError} from '../middleware/errorHandler';
-import {AuthRequest} from '../middleware/authMiddleware';
-import nodemailer from 'nodemailer';
-import {getForgotPasswordEmailTemplate} from '../templates/forgotPasswordEmail';
-import {getEmailVerificationEmailTemplate} from '../templates/emailVerificationEmail';
-import {isTwilioConfigured, sendOTP} from '../config/twilio';
-import {decrypt, decryptCredentials} from '../utils/decryption';
-import dotenv from 'dotenv';
+import {NextFunction, Request, Response} from "express";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import crypto, {createHash, randomBytes} from "crypto";
+import mongoose from "mongoose";
+import {User} from "../models/User";
+import {PasswordResetToken} from "../models/PasswordResetToken";
+import {EmailVerificationToken} from "../models/EmailVerificationToken";
+import {PhoneVerificationToken} from "../models/PhoneVerificationToken";
+import Therapist from "../models/Therapist";
+import {CustomError} from "../middleware/errorHandler";
+import {AuthRequest} from "../middleware/authMiddleware";
+import nodemailer from "nodemailer";
+import {getForgotPasswordEmailTemplate} from "../templates/forgotPasswordEmail";
+import {getEmailVerificationEmailTemplate} from "../templates/emailVerificationEmail";
+import {isTwilioConfigured, sendOTP} from "../config/twilio";
+import {decrypt, decryptCredentials} from "../utils/decryption";
+import dotenv from "dotenv";
 
 dotenv.config();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
-const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '30d';
+const JWT_SECRET =
+    process.env.JWT_SECRET || "your-secret-key-change-in-production";
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
+const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || "30d";
 
 interface GoogleTokenResponse {
   access_token: string;
@@ -45,10 +46,10 @@ interface GoogleProfile {
 
 const createTransporter = () => {
   return nodemailer.createTransport({
-    service: 'gmail',
+    service: "gmail",
     auth: {
-      user: process.env.GMAIL_USER || 'yourEmail@gmail.com',
-      pass: process.env.GMAIL_APP_PASSWORD || 'yourAppPassword',
+      user: process.env.GMAIL_USER || "yourEmail@gmail.com",
+      pass: process.env.GMAIL_APP_PASSWORD || "yourAppPassword",
     },
     tls: {
       rejectUnauthorized: false,
@@ -59,25 +60,21 @@ const createTransporter = () => {
 const generateToken = (userId: string, tokenVersion: number): string => {
   const secret = JWT_SECRET;
   if (!secret) {
-    throw new Error('JWT_SECRET is not defined');
+    throw new Error("JWT_SECRET is not defined");
   }
-  return jwt.sign(
-    { userId, tokenVersion },
-    secret,
-    { expiresIn: JWT_EXPIRES_IN } as jwt.SignOptions
-  );
+  return jwt.sign({userId, tokenVersion}, secret, {
+    expiresIn: JWT_EXPIRES_IN,
+  } as jwt.SignOptions);
 };
 
 const generateRefreshToken = (userId: string, tokenVersion: number): string => {
   const secret = JWT_SECRET;
   if (!secret) {
-    throw new Error('JWT_SECRET is not defined');
+    throw new Error("JWT_SECRET is not defined");
   }
-  return jwt.sign(
-    { userId, tokenVersion, type: 'refresh' },
-    secret,
-    { expiresIn: JWT_REFRESH_EXPIRES_IN } as jwt.SignOptions
-  );
+  return jwt.sign({userId, tokenVersion, type: "refresh"}, secret, {
+    expiresIn: JWT_REFRESH_EXPIRES_IN,
+  } as jwt.SignOptions);
 };
 
 const generateOTP = (): string => {
@@ -85,7 +82,11 @@ const generateOTP = (): string => {
 };
 
 function base64url(buffer: Buffer) {
-  return buffer.toString("base64").replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+  return buffer
+      .toString("base64")
+      .replace(/=/g, "")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_");
 }
 
 function generateVerifier() {
@@ -98,21 +99,28 @@ function generateChallenge(verifier: string) {
 
 const pkceStore = new Map<string, { verifier: string; expires: number }>();
 
-const sendVerificationEmail = async (email: string, otp: string): Promise<void> => {
+// Send email verification OTP
+const sendVerificationEmail = async (
+    email: string,
+    otp: string
+): Promise<void> => {
   try {
     const transporter = createTransporter();
-    const verificationEmailHtml = getEmailVerificationEmailTemplate("User", otp);
+    const verificationEmailHtml = getEmailVerificationEmailTemplate(
+        "User",
+        otp
+    );
 
     await transporter.sendMail({
-      from: process.env.GMAIL_USER || 'yourEmail@gmail.com',
+      from: process.env.GMAIL_USER || "yourEmail@gmail.com",
       to: email,
-      subject: 'Verify Your Email Address - Mental Health App',
+      subject: "Verify Your Email Address - Mental Health App",
       html: verificationEmailHtml,
     });
   } catch (emailError) {
-    console.error('Email sending error:', emailError);
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('Failed to send verification email');
+    console.error("Email sending error:", emailError);
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("Failed to send verification email");
     }
   }
 };
@@ -145,7 +153,9 @@ export const register = async (
     try {
       password = decrypt(encryptedPassword);
     } catch (decryptError) {
-      const error: CustomError = new Error('Failed to decrypt password. Please ensure the encryption key matches between frontend and backend.');
+      const error: CustomError = new Error(
+          "Failed to decrypt password. Invalid encryption."
+      );
       error.statusCode = 400;
       throw error;
     }
@@ -157,30 +167,51 @@ export const register = async (
       !phone?.countryCode ||
       !phone?.number ||
       emailVerified === undefined ||
-      emailVerified === null ||
       phone?.verified === undefined ||
-      phone?.verified === null ||
       !dateOfBirth ||
       !gender ||
       !country ||
       !timezone ||
       !password
     ) {
-      const error: CustomError = new Error('All required fields must be provided');
+      const error: CustomError = new Error("All fields are required");
       error.statusCode = 400;
       throw error;
     }
 
-    const validRoles = ["admin", "therapist", "patient", "superAdmin", "therapistManager", "supportAgent", "contentModerator"];
+    if (emailVerified !== true || phone.verified !== true) {
+      const error: CustomError = new Error(
+          "Registration not allowed. Email and phone must be verified before creating an account."
+      );
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const validRoles = [
+      "admin",
+      "therapist",
+      "patient",
+      "superAdmin",
+      "therapistManager",
+      "supportAgent",
+      "contentModerator",
+    ];
     if (role && !validRoles.includes(role)) {
-      const error: CustomError = new Error('Invalid role. Role must be one of: admin, therapist, patient, superAdmin, therapistManager, supportAgent, or contentModerator');
+      const error: CustomError = new Error(
+          "Invalid role. Role must be one of: admin, therapist, patient, superAdmin, therapistManager, supportAgent, contentModerator"
+      );
       error.statusCode = 400;
       throw error;
     }
 
-    const existingUser = await User.findOne({ email: email.toLowerCase(), deletedAt: null });
+    const existingUser = await User.findOne({
+      email: email.toLowerCase(),
+      deletedAt: null,
+    });
     if (existingUser) {
-      const error: CustomError = new Error('An account with this email address already exists');
+      const error: CustomError = new Error(
+          "User with this email already exists"
+      );
       error.statusCode = 409;
       throw error;
     }
@@ -209,9 +240,9 @@ export const register = async (
     user.emailVerified = false;
     await user.save();
 
-    const userRole = role || 'patient';
+    const userRole = role || "patient";
 
-    if (userRole === 'therapist') {
+    if (userRole === "therapist") {
       const therapist = new Therapist({
         user: user._id,
         firstName,
@@ -250,7 +281,7 @@ export const register = async (
 
     res.status(201).json({
       success: true,
-      message: 'Account created successfully. Please verify your email address to complete registration.',
+      message: "User registered successfully.",
       data: {
         user: userWithoutPassword,
         token,
@@ -270,10 +301,14 @@ export const login = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { email: encryptedEmail, password: encryptedPassword, isRemember } = req.body;
+    const {
+      email: encryptedEmail,
+      password: encryptedPassword,
+      isRemember,
+    } = req.body;
 
     if (!encryptedEmail || !encryptedPassword) {
-      const error: CustomError = new Error('Email and password are required');
+      const error: CustomError = new Error("Email and password are required");
       error.statusCode = 400;
       throw error;
     }
@@ -292,52 +327,59 @@ export const login = async (
       password = decryptedCredentials.password;
       rememberMe = decryptedCredentials.isRemember;
     } catch (decryptError: any) {
-      console.error('Login decryption error:', {
+      console.error("Login decryption error:", {
         message: decryptError?.message,
         hasEmail: !!encryptedEmail,
         hasPassword: !!encryptedPassword,
         emailLength: encryptedEmail?.length,
-        passwordLength: encryptedPassword?.length
+        passwordLength: encryptedPassword?.length,
       });
-      const error: CustomError = new Error('Failed to decrypt credentials. Please ensure the encryption key matches between frontend and backend.');
+      const error: CustomError = new Error(
+          "Failed to decrypt credentials. Invalid encryption. Please ensure the encryption key matches between frontend and backend."
+      );
       error.statusCode = 400;
       throw error;
     }
 
-    if (!email || !password || email.trim() === '' || password.trim() === '') {
-      const error: CustomError = new Error('Email and password are required');
+    if (!email || !password || email.trim() === "" || password.trim() === "") {
+      const error: CustomError = new Error("Email and password are required");
       error.statusCode = 400;
       throw error;
     }
 
-    const user = await User.findOne({ email: email.toLowerCase(), deletedAt: null });
+    const user = await User.findOne({
+      email: email.toLowerCase(),
+      deletedAt: null,
+    });
     if (!user) {
-      const error: CustomError = new Error('Invalid email or password');
+      const error: CustomError = new Error("Invalid email or password");
       error.statusCode = 401;
       throw error;
     }
 
     if (!user.password) {
-      const error: CustomError = new Error('This account was created using social login. Please sign in with your social account.');
+      const error: CustomError = new Error(
+          "This account was created with social login. Please use social login to sign in."
+      );
       error.statusCode = 401;
       throw error;
     }
 
-    if (typeof password !== 'string' || password.length === 0) {
-      const error: CustomError = new Error('Invalid password format');
+    if (typeof password !== "string" || password.length === 0) {
+      const error: CustomError = new Error("Invalid password format");
       error.statusCode = 400;
       throw error;
     }
 
-    if (typeof user.password !== 'string' || user.password.length === 0) {
-      const error: CustomError = new Error('User password is not set');
+    if (typeof user.password !== "string" || user.password.length === 0) {
+      const error: CustomError = new Error("User password is not set");
       error.statusCode = 500;
       throw error;
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      const error: CustomError = new Error('Invalid email or password');
+      const error: CustomError = new Error("Invalid email or password");
       error.statusCode = 401;
       throw error;
     }
@@ -363,7 +405,7 @@ export const login = async (
 
     res.status(200).json({
       success: true,
-      message: 'Login successful. Welcome back!',
+      message: "Login successful",
       data: {
         user: userWithoutPassword,
         token,
@@ -390,11 +432,15 @@ export const forgotPassword = async (
       throw error;
     }
 
-    const user = await User.findOne({ email: email.toLowerCase(), deletedAt: null });
+    const user = await User.findOne({
+      email: email.toLowerCase(),
+      deletedAt: null,
+    });
     if (!user) {
       res.status(200).json({
         success: true,
-        message: "If an account with that email exists, a password reset link has been sent to your email address.",
+        message:
+            "If an account with that email exists, a password reset link has been sent.",
       });
       return;
     }
@@ -410,7 +456,7 @@ export const forgotPassword = async (
       expiresAt,
     });
 
-    const resetLink = `${process.env.FRONTEND_URL}/auth/forgotPassword?token=${resetToken}`;
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
     try {
       const transporter = createTransporter();
@@ -426,7 +472,7 @@ export const forgotPassword = async (
 
     res.status(200).json({
       success: true,
-      message: "Password reset link has been sent to your email address.",
+      message: "Reset link sent successfully.",
       ...(process.env.NODE_ENV !== "production" && { resetToken }),
     });
   } catch (error) {
@@ -444,26 +490,29 @@ export const resetPassword = async (
     const { token, password } = req.body;
 
     if (!token || !password) {
-      const error: CustomError = new Error("Reset token and new password are required");
+      const error: CustomError = new Error("Token & new password required");
       error.statusCode = 400;
       throw error;
     }
 
     const resetTokenDoc = await PasswordResetToken.findOne({ token });
     if (!resetTokenDoc) {
-      const error: CustomError = new Error("Invalid or expired password reset token. Please request a new reset link.");
+      const error: CustomError = new Error("Invalid or expired reset token");
       error.statusCode = 400;
       throw error;
     }
 
     if (resetTokenDoc.expiresAt < new Date()) {
       await PasswordResetToken.findByIdAndDelete(resetTokenDoc._id);
-      const error: CustomError = new Error("Password reset link has expired. Please request a new reset link.");
+      const error: CustomError = new Error("Reset link has expired");
       error.statusCode = 400;
       throw error;
     }
 
-    const user = await User.findOne({ _id: resetTokenDoc.userId, deletedAt: null });
+    const user = await User.findOne({
+      _id: resetTokenDoc.userId,
+      deletedAt: null,
+    });
     if (!user) {
       const error: CustomError = new Error("User not found");
       error.statusCode = 404;
@@ -478,7 +527,7 @@ export const resetPassword = async (
 
     res.status(200).json({
       success: true,
-      message: "Your password has been reset successfully. You can now sign in with your new password.",
+      message: "Password reset successfully",
     });
   } catch (error) {
     next(error);
@@ -495,22 +544,24 @@ export const getUser = async (
     const userId = req.user?._id;
 
     if (!userId) {
-      const error: CustomError = new Error('Unauthorized: User ID missing');
+      const error: CustomError = new Error("Unauthorized: User ID missing");
       error.statusCode = 401;
       throw error;
     }
 
-    const user = await User.findOne({ _id: userId, deletedAt: null }).select('-password');
+    const user = await User.findOne({_id: userId, deletedAt: null}).select(
+        "-password"
+    );
 
     if (!user) {
-      const error: CustomError = new Error('User not found');
+      const error: CustomError = new Error("User not found");
       error.statusCode = 404;
       throw error;
     }
 
     res.status(200).json({
       success: true,
-      message: 'User information retrieved successfully',
+      message: "User fetched successfully",
       data: user,
     });
   } catch (error) {
@@ -527,95 +578,74 @@ export const verifyEmail = async (
   try {
     const { otp, email } = req.body;
 
-    if (!email) {
-      const error: CustomError = new Error('Email address is required');
-      error.statusCode = 400;
-      throw error;
-    }
-
-    const user = await User.findOne({
-      email: email.toLowerCase().trim(),
-      deletedAt: null
-    });
-
-    if (!user) {
-      res.status(200).json({
-        success: true,
-        message: 'Email not verified',
-        data: {
-          email: email.toLowerCase().trim(),
-          emailVerified: false,
-          exists: false,
-        },
-      });
-      return;
-    }
-
-    if (user.emailVerified) {
-      res.status(200).json({
-        success: true,
-        message: 'Email already verified',
-        data: {
-          email: user.email,
-          emailVerified: true,
-          exists: true,
-        },
-      });
-      return;
-    }
-
     if (!otp) {
-      const error: CustomError = new Error('Verification code (OTP) is required');
+      const error: CustomError = new Error("OTP is required");
       error.statusCode = 400;
       throw error;
     }
 
     const verificationToken = await EmailVerificationToken.findOne({
-      email: email.toLowerCase().trim(),
+      email,
       deletedAt: null,
     });
 
     if (!verificationToken) {
-      const error: CustomError = new Error('Verification code not found or has been used. Please request a new verification code.');
+      const error: CustomError = new Error(
+          "Verification code not found. Please request a new OTP."
+      );
       error.statusCode = 404;
       throw error;
     }
 
-    if (verificationToken.expiresAt < new Date()) {
-      await EmailVerificationToken.findByIdAndUpdate(verificationToken._id, { deletedAt: new Date() });
-      const error: CustomError = new Error('Verification code has expired. Please request a new verification code.');
+    const today = new Date();
+    const isSameDay =
+        verificationToken.lastAttemptDate &&
+        new Date(verificationToken.lastAttemptDate).toDateString() ===
+        today.toDateString();
+
+    if (!isSameDay) {
+      verificationToken.attemptsToday = 0;
+    }
+
+    if (verificationToken.attemptsToday >= 5) {
+      const error: CustomError = new Error(
+          "You have reached the maximum number of attempts for today. Try again tomorrow."
+      );
       error.statusCode = 400;
       throw error;
     }
 
-    if (verificationToken.attempts >= 5) {
-      await EmailVerificationToken.findByIdAndUpdate(verificationToken._id, { deletedAt: new Date() });
-      const error: CustomError = new Error('Maximum verification attempts exceeded. Please request a new verification code.');
+    if (verificationToken.expiresAt < new Date()) {
+      verificationToken.deletedAt = new Date();
+      await verificationToken.save();
+      const error: CustomError = new Error(
+          "Verification code has expired. Please request a new OTP."
+      );
       error.statusCode = 400;
       throw error;
     }
 
     if (verificationToken.otp !== otp) {
-      verificationToken.attempts += 1;
+      verificationToken.attemptsToday += 1;
+      verificationToken.lastAttemptDate = today;
       await verificationToken.save();
-      const error: CustomError = new Error(`Invalid verification code. You have ${5 - verificationToken.attempts} attempt(s) remaining.`);
+
+      const remaining = 5 - verificationToken.attemptsToday;
+
+      const error: CustomError = new Error(
+          `Invalid verification code. ${remaining} attempts left today.`
+      );
       error.statusCode = 400;
       throw error;
     }
 
-    user.emailVerified = true;
-    await user.save();
-
-    await EmailVerificationToken.findByIdAndUpdate(verificationToken._id, { deletedAt: new Date() });
+    verificationToken.deletedAt = new Date();
+    await verificationToken.save();
 
     res.status(200).json({
       success: true,
-      message: 'Email address verified successfully',
-      data: {
-        email: user.email,
-        emailVerified: true,
-        exists: true,
-      },
+      message: "Email verified successfully",
+      data: {emailVerified: true},
     });
   } catch (error) {
     next(error);
@@ -632,7 +662,7 @@ export const sendVerificationEmailAPI = async (
     const { email } = req.body;
 
     if (!email) {
-      const error: CustomError = new Error('Email is required');
+      const error: CustomError = new Error("Email is required");
       error.statusCode = 400;
       throw error;
     }
@@ -656,19 +686,21 @@ export const sendVerificationEmailAPI = async (
       await sendVerificationEmail(email, otp);
       res.status(200).json({
         success: true,
-        message: 'Verification email has been sent successfully. Please check your inbox.',
-        ...(process.env.NODE_ENV !== 'production' && { otp }),
+        message: "Verification email sent successfully",
+        ...(process.env.NODE_ENV !== "production" && {otp}),
       });
     } catch (emailError) {
-      console.error('Email sending error:', emailError);
-      if (process.env.NODE_ENV === 'production') {
-        const error: CustomError = new Error('Failed to send verification email');
+      console.error("Email sending error:", emailError);
+      if (process.env.NODE_ENV === "production") {
+        const error: CustomError = new Error(
+            "Failed to send verification email"
+        );
         error.statusCode = 500;
         throw error;
       } else {
         res.status(200).json({
           success: true,
-          message: 'Verification email sent successfully (development mode)',
+          message: "Verification email sent successfully",
           otp,
         });
       }
@@ -688,7 +720,7 @@ export const resendVerificationEmail = async (
     const { email } = req.body;
 
     if (!email) {
-      const error: CustomError = new Error('Email is required');
+      const error: CustomError = new Error("Email is required");
       error.statusCode = 400;
       throw error;
     }
@@ -712,19 +744,21 @@ export const resendVerificationEmail = async (
       await sendVerificationEmail(email, otp);
       res.status(200).json({
         success: true,
-        message: 'Verification email has been sent successfully. Please check your inbox.',
-        ...(process.env.NODE_ENV !== 'production' && { otp }),
+        message: "Verification email sent successfully",
+        ...(process.env.NODE_ENV !== "production" && {otp}),
       });
     } catch (emailError) {
-      console.error('Email sending error:', emailError);
-      if (process.env.NODE_ENV === 'production') {
-        const error: CustomError = new Error('Failed to send verification email');
+      console.error("Email sending error:", emailError);
+      if (process.env.NODE_ENV === "production") {
+        const error: CustomError = new Error(
+            "Failed to send verification email"
+        );
         error.statusCode = 500;
         throw error;
       } else {
         res.status(200).json({
           success: true,
-          message: 'Verification email sent successfully (development mode)',
+          message: "Verification email sent successfully",
           otp,
         });
       }
@@ -745,33 +779,37 @@ export const changePassword = async (
     const { oldPassword, newPassword } = req.body;
 
     if (!userId) {
-      const error: CustomError = new Error('Unauthorized: User ID missing');
+      const error: CustomError = new Error("Unauthorized: User ID missing");
       error.statusCode = 401;
       throw error;
     }
 
     if (!oldPassword || !newPassword) {
-      const error: CustomError = new Error('Both current password and new password are required');
+      const error: CustomError = new Error(
+          "Old password and new password are required"
+      );
       error.statusCode = 400;
       throw error;
     }
 
     if (newPassword.length < 6) {
-      const error: CustomError = new Error('New password must be at least 6 characters in length');
+      const error: CustomError = new Error(
+          "New password must be at least 6 characters long"
+      );
       error.statusCode = 400;
       throw error;
     }
 
     const user = await User.findOne({ _id: userId, deletedAt: null });
     if (!user) {
-      const error: CustomError = new Error('User not found');
+      const error: CustomError = new Error("User not found");
       error.statusCode = 404;
       throw error;
     }
 
     if (!user.password || typeof user.password !== "string") {
       const error: CustomError = new Error(
-        'No password is set for this account. Please set a password first.'
+          "User does not have a password set. Please set a password first."
       );
       error.statusCode = 400;
       throw error;
@@ -780,7 +818,7 @@ export const changePassword = async (
     const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
 
     if (!isOldPasswordValid) {
-      const error: CustomError = new Error('Current password is incorrect');
+      const error: CustomError = new Error("Old password is incorrect");
       error.statusCode = 401;
       throw error;
     }
@@ -795,9 +833,8 @@ export const changePassword = async (
 
     res.status(200).json({
       success: true,
-      message: 'Password has been changed successfully',
+      message: "Password changed successfully",
     });
-
   } catch (error) {
     next(error);
   }
@@ -814,13 +851,13 @@ export const addPassword = async (
     const { password: encryptedPassword } = req.body;
 
     if (!userId) {
-      const error: CustomError = new Error('Unauthorized: User ID missing');
+      const error: CustomError = new Error("Unauthorized: User ID missing");
       error.statusCode = 401;
       throw error;
     }
 
     if (!encryptedPassword) {
-      const error: CustomError = new Error('Password is required');
+      const error: CustomError = new Error("Password is required");
       error.statusCode = 400;
       throw error;
     }
@@ -830,33 +867,41 @@ export const addPassword = async (
     try {
       password = decrypt(encryptedPassword);
     } catch (decryptError) {
-      const error: CustomError = new Error('Failed to decrypt password. Please ensure the encryption key matches between frontend and backend.');
+      const error: CustomError = new Error(
+          "Failed to decrypt password. Invalid encryption."
+      );
       error.statusCode = 400;
       throw error;
     }
 
-    if (!password || password.trim() === '') {
-      const error: CustomError = new Error('Password is required');
+    if (!password || password.trim() === "") {
+      const error: CustomError = new Error("Password is required");
       error.statusCode = 400;
       throw error;
     }
 
     if (password.length < 6) {
-      const error: CustomError = new Error('Password must be at least 6 characters in length');
+      const error: CustomError = new Error(
+          "Password must be at least 6 characters long"
+      );
       error.statusCode = 400;
       throw error;
     }
 
     const user = await User.findOne({ _id: userId, deletedAt: null });
     if (!user) {
-      const error: CustomError = new Error('User not found');
+      const error: CustomError = new Error("User not found");
       error.statusCode = 404;
       throw error;
     }
 
-    if (user.password && typeof user.password === "string" && user.password.length > 0) {
+    if (
+        user.password &&
+        typeof user.password === "string" &&
+        user.password.length > 0
+    ) {
       const error: CustomError = new Error(
-        'A password is already set for this account. Please use the change password endpoint to update it.'
+          "User already has a password set. Please use change-password endpoint to update it."
       );
       error.statusCode = 400;
       throw error;
@@ -871,9 +916,8 @@ export const addPassword = async (
 
     res.status(200).json({
       success: true,
-      message: 'Password has been added successfully',
+      message: "Password added successfully",
     });
-
   } catch (error) {
     next(error);
   }
@@ -889,7 +933,7 @@ export const sendVerificationPhoneAPI = async (
     const { phone } = req.body;
 
     if (!phone) {
-      const error: CustomError = new Error('Phone number is required');
+      const error: CustomError = new Error("Phone is required");
       error.statusCode = 400;
       throw error;
     }
@@ -911,14 +955,16 @@ export const sendVerificationPhoneAPI = async (
     );
 
     if (!isTwilioConfigured()) {
-      if (process.env.NODE_ENV === 'production') {
-        const error: CustomError = new Error('SMS service is not configured. Please contact support for assistance.');
+      if (process.env.NODE_ENV === "production") {
+        const error: CustomError = new Error(
+            "SMS service is not configured. Please contact support."
+        );
         error.statusCode = 503;
         throw error;
       } else {
         res.status(200).json({
           success: true,
-          message: 'Verification code generated (development mode - SMS service not configured)',
+          message: "Verification code generated",
           otp,
         });
         return;
@@ -929,19 +975,19 @@ export const sendVerificationPhoneAPI = async (
       await sendOTP(phoneNumber, otp);
       res.status(200).json({
         success: true,
-        message: 'Verification SMS has been sent successfully. Please check your phone.',
-        ...(process.env.NODE_ENV !== 'production' && { otp }),
+        message: "Verification SMS sent successfully",
+        ...(process.env.NODE_ENV !== "production" && {otp}),
       });
     } catch (smsError) {
-      console.error('SMS sending error:', smsError);
-      if (process.env.NODE_ENV === 'production') {
-        const error: CustomError = new Error('Failed to send verification SMS');
+      console.error("SMS sending error:", smsError);
+      if (process.env.NODE_ENV === "production") {
+        const error: CustomError = new Error("Failed to send verification SMS");
         error.statusCode = 500;
         throw error;
       } else {
         res.status(200).json({
           success: true,
-          message: 'Verification SMS failed to send (development mode - OTP provided for testing)',
+          message: "Verification SMS failed to send",
           otp,
         });
       }
@@ -961,13 +1007,13 @@ export const verifyPhone = async (
     const { otp, phone } = req.body;
 
     if (!otp) {
-      const error: CustomError = new Error('OTP is required');
+      const error: CustomError = new Error("OTP is required");
       error.statusCode = 400;
       throw error;
     }
 
     if (!phone) {
-      const error: CustomError = new Error('Phone number is required');
+      const error: CustomError = new Error("Phone is required");
       error.statusCode = 400;
       throw error;
     }
@@ -979,41 +1025,62 @@ export const verifyPhone = async (
     });
 
     if (!verificationToken) {
-      const error: CustomError = new Error('Verification code not found. Please request a new one.');
+      const error: CustomError = new Error(
+          "Verification code not found. Please request a new one."
+      );
       error.statusCode = 404;
       throw error;
     }
 
-    if (verificationToken.expiresAt < new Date()) {
-      await PhoneVerificationToken.findByIdAndUpdate(verificationToken._id, { deletedAt: new Date() });
-      const error: CustomError = new Error('Verification code has expired. Please request a new one.');
+    const today = new Date();
+    const isSameDay =
+        verificationToken.lastAttemptDate &&
+        new Date(verificationToken.lastAttemptDate).toDateString() ===
+        today.toDateString();
+
+    if (!isSameDay) {
+      verificationToken.attemptsToday = 0;
+    }
+
+    if (verificationToken.attemptsToday >= 5) {
+      const error: CustomError = new Error(
+          "You have reached the maximum number of attempts for today. Try again tomorrow."
+      );
       error.statusCode = 400;
       throw error;
     }
 
-    if (verificationToken.attempts >= 5) {
-      await PhoneVerificationToken.findByIdAndUpdate(verificationToken._id, { deletedAt: new Date() });
-      const error: CustomError = new Error('Maximum attempts exceeded. Please request a new verification code.');
+    if (verificationToken.expiresAt < new Date()) {
+      verificationToken.deletedAt = new Date();
+      await verificationToken.save();
+      const error: CustomError = new Error(
+          "Verification code has expired. Please request a new one."
+      );
       error.statusCode = 400;
       throw error;
     }
 
     if (verificationToken.otp !== otp) {
-      verificationToken.attempts += 1;
+      verificationToken.attemptsToday += 1;
+      verificationToken.lastAttemptDate = today;
       await verificationToken.save();
-      const error: CustomError = new Error(`Invalid verification code. ${5 - verificationToken.attempts} attempts remaining.`);
+
+      const remaining = 5 - verificationToken.attemptsToday;
+
+      const error: CustomError = new Error(
+          `Invalid verification code. ${remaining} attempts left today.`
+      );
       error.statusCode = 400;
       throw error;
     }
 
-    await PhoneVerificationToken.findByIdAndUpdate(verificationToken._id, { deletedAt: new Date() });
+    verificationToken.deletedAt = new Date();
+    await verificationToken.save();
 
     res.status(200).json({
       success: true,
-      message: 'Phone number verified successfully',
-      data: {
-        phoneVerified: true,
-      },
+      message: "Phone verified successfully",
+      data: {phoneVerified: true},
     });
   } catch (error) {
     next(error);
@@ -1030,7 +1097,7 @@ export const resendVerificationPhone = async (
     const { phone } = req.body;
 
     if (!phone) {
-      const error: CustomError = new Error('Phone number is required');
+      const error: CustomError = new Error("Phone is required");
       error.statusCode = 400;
       throw error;
     }
@@ -1052,14 +1119,16 @@ export const resendVerificationPhone = async (
     );
 
     if (!isTwilioConfigured()) {
-      if (process.env.NODE_ENV === 'production') {
-        const error: CustomError = new Error('SMS service is not configured. Please contact support for assistance.');
+      if (process.env.NODE_ENV === "production") {
+        const error: CustomError = new Error(
+            "SMS service is not configured. Please contact support."
+        );
         error.statusCode = 503;
         throw error;
       } else {
         res.status(200).json({
           success: true,
-          message: 'Verification code generated (development mode - SMS service not configured)',
+          message: "resend verification phone OTP",
           otp,
         });
         return;
@@ -1070,19 +1139,19 @@ export const resendVerificationPhone = async (
       await sendOTP(phoneNumber, otp);
       res.status(200).json({
         success: true,
-        message: 'Verification SMS has been sent successfully. Please check your phone.',
-        ...(process.env.NODE_ENV !== 'production' && { otp }),
+        message: "Verification SMS sent successfully",
+        ...(process.env.NODE_ENV !== "production" && {otp}),
       });
     } catch (smsError) {
-      console.error('SMS sending error:', smsError);
-      if (process.env.NODE_ENV === 'production') {
-        const error: CustomError = new Error('Failed to send verification SMS');
+      console.error("SMS sending error:", smsError);
+      if (process.env.NODE_ENV === "production") {
+        const error: CustomError = new Error("Failed to send verification SMS");
         error.statusCode = 500;
         throw error;
       } else {
         res.status(200).json({
           success: true,
-          message: 'Verification SMS failed to send (development mode - OTP provided for testing)',
+          message: "Verification SMS failed to send",
           otp,
         });
       }
@@ -1102,7 +1171,7 @@ export const refreshToken = async (
     const { refreshToken: providedRefreshToken } = req.body;
 
     if (!providedRefreshToken) {
-      const error: CustomError = new Error('Refresh token is required');
+      const error: CustomError = new Error("Refresh token is required");
       error.statusCode = 400;
       throw error;
     }
@@ -1111,30 +1180,30 @@ export const refreshToken = async (
     try {
       decoded = jwt.verify(providedRefreshToken, JWT_SECRET);
     } catch (err) {
-      const error: CustomError = new Error('Invalid or expired refresh token. Please sign in again.');
+      const error: CustomError = new Error("Invalid or expired refresh token");
       error.statusCode = 401;
       throw error;
     }
 
-    if (decoded.type !== 'refresh') {
-      const error: CustomError = new Error('Invalid token type. Please use a valid refresh token.');
+    if (decoded.type !== "refresh") {
+      const error: CustomError = new Error("Invalid token type");
       error.statusCode = 401;
       throw error;
     }
 
     const user = await User.findOne({
       _id: decoded.userId,
-      deletedAt: null
+      deletedAt: null,
     });
 
     if (!user) {
-      const error: CustomError = new Error('User not found');
+      const error: CustomError = new Error("User not found");
       error.statusCode = 404;
       throw error;
     }
 
     if (user.refreshToken !== providedRefreshToken) {
-      const error: CustomError = new Error('Invalid refresh token. Please sign in again.');
+      const error: CustomError = new Error("Invalid refresh token");
       error.statusCode = 401;
       throw error;
     }
@@ -1144,7 +1213,9 @@ export const refreshToken = async (
     if (tokenVersion !== currentTokenVersion) {
       user.refreshToken = null;
       await user.save();
-      const error: CustomError = new Error('Refresh token has been invalidated. Please login again.');
+      const error: CustomError = new Error(
+          "Refresh token has been invalidated. Please login again."
+      );
       error.statusCode = 401;
       throw error;
     }
@@ -1164,7 +1235,7 @@ export const refreshToken = async (
 
     res.status(200).json({
       success: true,
-      message: 'Access token refreshed successfully',
+      message: "Token refreshed successfully",
       data: {
         token: newToken,
         refreshToken: newRefreshToken,
@@ -1176,16 +1247,23 @@ export const refreshToken = async (
 };
 
 // Google OAuth2 authentication
-export const googleAuth = async (req: Request, res: Response): Promise<Response | void> => {
+export const googleAuth = async (
+    req: Request,
+    res: Response
+): Promise<Response | void> => {
   if (!process.env.REDIRECT_URL) {
     console.error("❌ REDIRECT_URL is missing in .env");
-    return res.status(500).send("Server configuration error: Missing redirect URL");
+    return res
+        .status(500)
+        .send("Server configuration error: Missing redirect URL");
   }
 
   const role = req.query.role as string;
 
   if (!role) {
-    return res.status(400).json({ message: "Role is required. Please specify either 'patient' or 'therapist'." });
+    return res
+        .status(400)
+        .json({message: "Role is required (patient | therapist)"});
   }
 
   const state = Buffer.from(JSON.stringify({ role })).toString("base64");
@@ -1202,12 +1280,14 @@ export const googleAuth = async (req: Request, res: Response): Promise<Response 
     scope: "openid email profile",
     code_challenge: challenge,
     code_challenge_method: "S256",
-    state
+    state,
   });
 
   params.append("prompt", "select_account");
 
-  res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+  res.redirect(
+      `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
+  );
 };
 
 // Google OAuth2 authentication callback
@@ -1221,18 +1301,21 @@ export const googleCallback = async (
     const state = req.query.state as string;
 
     if (!code || !state) {
-      res.status(400).send("Invalid Google authentication session. Please try again.");
+      res.status(400).send("Invalid Google auth session");
       return;
     }
 
     const stateDecoded = JSON.parse(Buffer.from(state, "base64").toString());
-    const roleFromState = stateDecoded.role as "patient" | "therapist" | undefined;
+    const roleFromState = stateDecoded.role as
+        | "patient"
+        | "therapist"
+        | undefined;
 
     const session = pkceStore.get(state);
     pkceStore.delete(state);
 
     if (!session) {
-      res.status(400).send("Authentication session has expired. Please try again.");
+      res.status(400).send("Session expired");
       return;
     }
 
@@ -1255,9 +1338,12 @@ export const googleCallback = async (
       throw new Error("Google token exchange failed");
     }
 
-    const profileRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
-      headers: { Authorization: `Bearer ${tokens.access_token}` },
-    });
+    const profileRes = await fetch(
+        "https://www.googleapis.com/oauth2/v2/userinfo",
+        {
+          headers: {Authorization: `Bearer ${tokens.access_token}`},
+        }
+    );
 
     const profile = (await profileRes.json()) as GoogleProfile;
 
@@ -1275,7 +1361,9 @@ export const googleCallback = async (
 
     if (!user) {
       if (!roleFromState) {
-        return res.redirect(`${process.env.FRONTEND_URL}/select-role?email=${email}`);
+        return res.redirect(
+            `${process.env.FRONTEND_URL}/select-role?email=${email}`
+        );
       }
 
       user = await User.create({
@@ -1331,7 +1419,6 @@ export const googleCallback = async (
     return res.redirect(
       `${process.env.FRONTEND_URL}/dashboard/home?token=${token}&refreshToken=${refreshToken}&id=${userId}&role=${user.role}`
     );
-
   } catch (err) {
     console.error("Google OAuth Error →", err);
     next(err);

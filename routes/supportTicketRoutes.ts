@@ -1,14 +1,14 @@
-import { Router } from 'express';
+import {Router} from 'express';
 import {
   createSupportTicket,
+  deleteSupportTicket,
   getAllSupportTickets,
   getSupportTicketById,
   updateSupportTicket,
-  deleteSupportTicket,
 } from '../controllers/supportTicketController';
-import { authenticate } from '../middleware/authMiddleware';
-import { upload } from '../middleware/uploadMiddleware';
-import { checkPermission, requireRole } from '../middleware/rbacMiddleware';
+import {authenticate} from '../middleware/authMiddleware';
+import {upload} from '../middleware/uploadMiddleware';
+import {checkPermission, requireRole} from '../middleware/rbacMiddleware';
 
 const router = Router();
 

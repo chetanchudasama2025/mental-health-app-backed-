@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
-import { Readable } from 'stream';
-import { CustomError } from './errorHandler';
-import cloudinary, { isCloudinaryConfigured } from '../config/cloudinary';
+import {NextFunction, Request, Response} from 'express';
+import {Readable} from 'stream';
+import {CustomError} from './errorHandler';
+import cloudinary, {isCloudinaryConfigured} from '../config/cloudinary';
 
 const multer: any = require('multer');
 

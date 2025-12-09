@@ -1,9 +1,9 @@
-import { Request, Response, NextFunction } from 'express';
+import {NextFunction, Request, Response} from 'express';
 import jwt from 'jsonwebtoken';
-import { User, IUser } from '../models/User';
-import { CustomError } from './errorHandler';
+import {IUser, User} from '../models/User';
+import {CustomError} from './errorHandler';
 import mongoose from 'mongoose';
-import { defineAbilitiesFor, AppAbility } from '../config/abilities';
+import {AppAbility, defineAbilitiesFor} from '../config/abilities';
 
 export interface AuthRequest extends Request {
   user?: {

@@ -1,10 +1,10 @@
-import { Request, Response, NextFunction } from 'express';
+import {NextFunction, Request, Response} from 'express';
 import mongoose from 'mongoose';
-import { User, IUser } from '../models/User';
+import {IUser, User} from '../models/User';
 import Therapist from '../models/Therapist';
-import { CustomError } from '../middleware/errorHandler';
-import { AuthRequest } from '../middleware/authMiddleware';
-import { uploadToCloudinary } from '../middleware/uploadMiddleware';
+import {CustomError} from '../middleware/errorHandler';
+import {AuthRequest} from '../middleware/authMiddleware';
+import {uploadToCloudinary} from '../middleware/uploadMiddleware';
 import bcrypt from 'bcrypt';
 
 // Create a new user
@@ -358,6 +358,28 @@ export const updateUser = async (
       if (req.body[field] !== undefined) {
         if (field === 'email') {
           updateData[field] = req.body[field].toLowerCase();
+        } else if (field === 'phone') {
+          let phoneData = req.body[field];
+          if (typeof phoneData === 'string') {
+            try {
+              phoneData = JSON.parse(phoneData);
+            } catch (e) {
+              const error: CustomError = new Error('Invalid phone format. Phone must be a valid JSON object with countryCode and number');
+              error.statusCode = 400;
+              throw error;
+            }
+          }
+          if (phoneData && typeof phoneData === 'object') {
+            updateData.phone = {
+              countryCode: phoneData.countryCode || user.phone?.countryCode,
+              number: phoneData.number || user.phone?.number,
+              verified: phoneData.verified !== undefined ? phoneData.verified : (user.phone?.verified || false),
+            };
+          } else {
+            const error: CustomError = new Error('Invalid phone format. Phone must be an object with countryCode and number');
+            error.statusCode = 400;
+            throw error;
+          }
         } else {
           updateData[field as keyof IUser] = req.body[field];
         }

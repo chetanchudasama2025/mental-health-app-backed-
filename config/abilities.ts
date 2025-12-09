@@ -1,5 +1,5 @@
-import { defineAbility } from "@casl/ability";
-import { IUser } from "../models/User";
+import {defineAbility} from "@casl/ability";
+import {IUser} from "../models/User";
 
 export type Actions = "create" | "read" | "update" | "delete" | "manage";
 
@@ -13,6 +13,7 @@ export type Subjects =
     | "Notification"
     | "SupportTicket"
     | "Availability"
+    | "Review"
     | "all";
 
 export type AppAbility = ReturnType<typeof defineAbilitiesFor>;
@@ -63,6 +64,10 @@ export function defineAbilitiesFor(user: IUser) {
             can("create", "SupportTicket", { userId: user._id });
             can("read", "SupportTicket", { userId: user._id });
             can("update", "SupportTicket", { userId: user._id });
+
+            // Reviews - can read their own reviews and reviews for their therapist profile
+            can("read", "Review", { reviewer: user._id });
+            can("read", "Review", { therapist: user.therapist });
             return;
         }
 
@@ -103,6 +108,14 @@ export function defineAbilitiesFor(user: IUser) {
             can("create", "SupportTicket", { userId: user._id });
             can("read", "SupportTicket", { userId: user._id });
             can("update", "SupportTicket", { userId: user._id });
+
+            // Reviews - patients can create, read, update, and delete their own reviews
+            can("create", "Review", { reviewer: user._id });
+            can("read", "Review", { reviewer: user._id });
+            can("update", "Review", { reviewer: user._id });
+            can("delete", "Review", { reviewer: user._id });
+            // Can also read approved reviews for therapists (public)
+            can("read", "Review", { status: "approved" });
             return;
         }
 

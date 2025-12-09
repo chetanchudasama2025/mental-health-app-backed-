@@ -1,23 +1,23 @@
-import { Router } from 'express';
+import {Router} from 'express';
 import {
-  register,
-  login,
-  forgotPassword,
-  resetPassword,
-  getUser,
-  changePassword,
   addPassword,
-  verifyEmail,
-  sendVerificationEmailAPI,
-  resendVerificationEmail,
-  sendVerificationPhoneAPI,
-  verifyPhone,
-  resendVerificationPhone,
+  changePassword,
+  forgotPassword,
+  getUser,
   googleAuth,
   googleCallback,
+  login,
   refreshToken,
+  register,
+  resendVerificationEmail,
+  resendVerificationPhone,
+  resetPassword,
+  sendVerificationEmailAPI,
+  sendVerificationPhoneAPI,
+  verifyEmail,
+  verifyPhone,
 } from '../controllers/authController';
-import { authenticate } from '../middleware/authMiddleware';
+import {authenticate} from '../middleware/authMiddleware';
 
 const router = Router();
 

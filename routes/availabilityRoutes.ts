@@ -1,14 +1,14 @@
-import { Router } from 'express';
+import {Router} from 'express';
 import {
   createAvailability,
+  deleteAvailability,
   getAllAvailabilities,
   getAvailabilityById,
   getAvailabilityByTherapistId,
   updateAvailability,
-  deleteAvailability,
 } from '../controllers/availabilityController';
-import { authenticate } from '../middleware/authMiddleware';
-import { checkPermission, requireRole } from '../middleware/rbacMiddleware';
+import {authenticate} from '../middleware/authMiddleware';
+import {checkPermission, requireRole} from '../middleware/rbacMiddleware';
 
 const router = Router();
 

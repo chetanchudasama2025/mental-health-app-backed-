@@ -1,15 +1,16 @@
-import { Router } from 'express';
+import {Router} from 'express';
 import {
   createTherapist,
+  deleteTherapist,
   getAllTherapists,
   getTherapistById,
   getTherapistByUserId,
   updateTherapist,
-  deleteTherapist,
+  getApprovedTherapists,
 } from '../controllers/therapistController';
-import { authenticate } from '../middleware/authMiddleware';
-import { upload } from '../middleware/uploadMiddleware';
-import { checkPermission, requireRole } from '../middleware/rbacMiddleware';
+import {authenticate} from '../middleware/authMiddleware';
+import {upload} from '../middleware/uploadMiddleware';
+import {checkPermission, requireRole} from '../middleware/rbacMiddleware';
 
 const router = Router();
 
@@ -30,6 +31,7 @@ router.post(
   createTherapist
 );
 router.get('/', getAllTherapists);
+router.get('/approved', getApprovedTherapists);
 router.get('/:id', getTherapistById);
 router.get('/user/:userId', getTherapistByUserId);
 router.put(

@@ -1,4 +1,4 @@
-import { Schema, model, Document } from "mongoose";
+import {Document, model, Schema} from "mongoose";
 
 export interface IPasswordResetToken extends Document {
   userId: Schema.Types.ObjectId;

@@ -1,16 +1,16 @@
-import { Router } from 'express';
+import {Router} from 'express';
 import {
-  getOrCreateConversation,
-  getUserConversations,
+  deleteConversation,
+  deleteMessage,
   getConversationById,
   getConversationMessages,
-  sendMessage,
+  getOrCreateConversation,
+  getUserConversations,
   markMessagesAsRead,
-  deleteMessage,
-  deleteConversation,
+  sendMessage,
 } from '../controllers/messageController';
-import { authenticate } from '../middleware/authMiddleware';
-import { checkPermission } from '../middleware/rbacMiddleware';
+import {authenticate} from '../middleware/authMiddleware';
+import {checkPermission} from '../middleware/rbacMiddleware';
 
 const conversationRouter = Router();
 const messageRouter = Router();

@@ -1,10 +1,11 @@
-import { Schema, model, Document } from "mongoose";
+import { Document, model, Schema } from "mongoose";
 
 export interface IPhoneVerificationToken extends Document {
   phone: string;
   otp: string;
   expiresAt: Date;
-  attempts: number;
+  attemptsToday: number;
+  lastAttemptDate: Date | null;
   deletedAt?: Date | null;
   createdAt: Date;
 }
@@ -24,10 +25,13 @@ const PhoneVerificationTokenSchema = new Schema<IPhoneVerificationToken>(
       required: true,
       default: () => new Date(Date.now() + 10 * 60 * 1000),
     },
-    attempts: {
+    attemptsToday: {
       type: Number,
       default: 0,
-      max: 5,
+    },
+    lastAttemptDate: {
+      type: Date,
+      default: null,
     },
     deletedAt: {
       type: Date,
@@ -45,4 +49,3 @@ export const PhoneVerificationToken = model<IPhoneVerificationToken>(
   "PhoneVerificationToken",
   PhoneVerificationTokenSchema
 );
-

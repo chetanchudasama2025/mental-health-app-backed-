@@ -1,10 +1,11 @@
-import { Request, Response, NextFunction } from 'express';
+import {NextFunction, Request, Response} from 'express';
 import mongoose from 'mongoose';
-import Therapist, { ITherapist } from '../models/Therapist';
-import { User } from '../models/User';
-import { CustomError } from '../middleware/errorHandler';
-import { AuthRequest } from '../middleware/authMiddleware';
-import { uploadToCloudinary } from '../middleware/uploadMiddleware';
+import Therapist, {ITherapist} from '../models/Therapist';
+import {User} from '../models/User';
+import Availability from '../models/Availability';
+import {CustomError} from '../middleware/errorHandler';
+import {AuthRequest} from '../middleware/authMiddleware';
+import {uploadToCloudinary} from '../middleware/uploadMiddleware';
 
 type MulterFile = any;
 
@@ -828,6 +829,169 @@ export const deleteTherapist = async (
     res.status(200).json({
       success: true,
       message: 'Therapist profile deleted successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get approved therapists with availability (for patient listing)
+export const getApprovedTherapists = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+  try {
+    const {
+      page = '1',
+      limit = '10',
+      search,
+      specialization,
+      language,
+      minPrice,
+      maxPrice,
+      serviceEnabled,
+    } = req.query;
+
+    const pageNum = parseInt(page as string, 10);
+    const limitNum = parseInt(limit as string, 10);
+    const skip = (pageNum - 1) * limitNum;
+
+    const therapistQuery: any = {
+      deletedAt: null,
+      status: 'approved'
+    };
+
+    if (search) {
+      therapistQuery.$or = [
+        {firstName: {$regex: search, $options: 'i'}},
+        {lastName: {$regex: search, $options: 'i'}},
+        {email: {$regex: search, $options: 'i'}},
+        {bio: {$regex: search, $options: 'i'}},
+      ];
+    }
+
+    if (specialization) {
+      let specializationsArray: string[] = [];
+      if (Array.isArray(specialization)) {
+        specializationsArray = specialization as string[];
+      } else if (typeof specialization === 'string') {
+        specializationsArray = specialization.split(',').map(s => s.trim()).filter(s => s);
+      }
+
+      if (specializationsArray.length > 0) {
+        therapistQuery.specializations = {$in: specializationsArray};
+      }
+    }
+
+    if (language) {
+      let languagesArray: string[] = [];
+      if (Array.isArray(language)) {
+        languagesArray = language as string[];
+      } else if (typeof language === 'string') {
+        languagesArray = language.split(',').map(l => l.trim()).filter(l => l);
+      }
+
+      if (languagesArray.length > 0) {
+        therapistQuery.languages = {$in: languagesArray};
+      }
+    }
+
+    const availabilityQuery: any = {};
+    const hasAvailabilityFilters = minPrice !== undefined || maxPrice !== undefined || serviceEnabled !== undefined;
+
+    if (minPrice !== undefined || maxPrice !== undefined) {
+      availabilityQuery.price = {};
+      if (minPrice !== undefined) {
+        const minPriceNum = parseFloat(minPrice as string);
+        if (!isNaN(minPriceNum)) {
+          availabilityQuery.price.$gte = minPriceNum;
+        }
+      }
+      if (maxPrice !== undefined) {
+        const maxPriceNum = parseFloat(maxPrice as string);
+        if (!isNaN(maxPriceNum)) {
+          availabilityQuery.price.$lte = maxPriceNum;
+        }
+      }
+    }
+
+    if (serviceEnabled !== undefined) {
+      const serviceEnabledValue = Array.isArray(serviceEnabled)
+          ? serviceEnabled[0]
+          : serviceEnabled;
+      const serviceEnabledStr = String(serviceEnabledValue);
+      availabilityQuery.serviceEnabled = serviceEnabledStr === 'true' || serviceEnabledStr === '1';
+    }
+
+    let matchingTherapistIds: mongoose.Types.ObjectId[] | null = null;
+
+    if (hasAvailabilityFilters) {
+      const matchingAvailabilities = await Availability.find(availabilityQuery).select('therapistId');
+      matchingTherapistIds = matchingAvailabilities.map(av => av.therapistId as mongoose.Types.ObjectId);
+
+      if (matchingTherapistIds.length === 0) {
+        res.status(200).json({
+          success: true,
+          message: 'Approved therapists retrieved successfully',
+          data: {
+            therapists: [],
+            pagination: {
+              page: pageNum,
+              limit: limitNum,
+              total: 0,
+              pages: 0,
+            },
+          },
+        });
+        return;
+      }
+
+      therapistQuery._id = {$in: matchingTherapistIds};
+    }
+
+    const total = await Therapist.countDocuments(therapistQuery);
+
+    const therapists = await Therapist.find(therapistQuery)
+        .populate('user', 'firstName lastName email role')
+        .skip(skip)
+        .limit(limitNum)
+        .sort({createdAt: -1});
+
+    const therapistsWithAvailability = await Promise.all(
+        therapists.map(async (therapist) => {
+          const therapistObj = therapist.toObject();
+
+          let availability = null;
+          if (hasAvailabilityFilters && matchingTherapistIds) {
+            const availabilityQueryForTherapist = {
+              therapistId: therapist._id,
+              ...availabilityQuery
+            };
+            availability = await Availability.findOne(availabilityQueryForTherapist);
+          } else {
+            availability = await Availability.findOne({therapistId: therapist._id});
+          }
+
+          return {
+            ...therapistObj,
+            availability: availability || null,
+          };
+        })
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Approved therapists retrieved successfully',
+      data: {
+        therapists: therapistsWithAvailability,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          pages: Math.ceil(total / limitNum),
+        },
+      },
     });
   } catch (error) {
     next(error);

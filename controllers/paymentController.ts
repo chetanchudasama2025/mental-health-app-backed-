@@ -1,9 +1,9 @@
-import { Request, Response, NextFunction } from 'express';
+import {NextFunction, Request, Response} from 'express';
 import mongoose from 'mongoose';
-import { Payment } from '../models/Payment';
-import { User } from '../models/User';
-import { CustomError } from '../middleware/errorHandler';
-import { AuthRequest } from '../middleware/authMiddleware';
+import {Payment} from '../models/Payment';
+import {User} from '../models/User';
+import {CustomError} from '../middleware/errorHandler';
+import {AuthRequest} from '../middleware/authMiddleware';
 
 // Create a new payment
 export const createPayment = async (

@@ -1,16 +1,16 @@
-import { Router } from 'express';
+import {Router} from 'express';
 import {
   createNotification,
+  deleteNotification,
   getAllNotifications,
   getNotificationById,
-  updateNotification,
-  markNotificationAsRead,
-  markAllNotificationsAsRead,
-  deleteNotification,
   getUnreadNotificationCount,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
+  updateNotification,
 } from '../controllers/notificationController';
-import { authenticate } from '../middleware/authMiddleware';
-import { checkPermission, requireRole } from '../middleware/rbacMiddleware';
+import {authenticate} from '../middleware/authMiddleware';
+import {checkPermission, requireRole} from '../middleware/rbacMiddleware';
 
 const router = Router();
 

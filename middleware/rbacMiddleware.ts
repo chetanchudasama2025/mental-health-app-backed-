@@ -1,8 +1,8 @@
-import { Response, NextFunction } from 'express';
-import { AuthRequest } from './authMiddleware';
-import { CustomError } from './errorHandler';
-import { Actions, Subjects } from '../config/abilities';
-import { IUser } from "../models/User";
+import {NextFunction, Response} from 'express';
+import {AuthRequest} from './authMiddleware';
+import {CustomError} from './errorHandler';
+import {Actions, Subjects} from '../config/abilities';
+import {IUser} from "../models/User";
 
 /**
  * RBAC Middleware to check if user has permission to perform an action on a subject

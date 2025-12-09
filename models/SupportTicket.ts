@@ -1,5 +1,4 @@
-import { Schema, model, Document } from "mongoose";
-import mongoose from "mongoose";
+import mongoose, {Document, model, Schema} from "mongoose";
 
 export interface ISupportTicket extends Document {
   userId?: mongoose.Types.ObjectId;

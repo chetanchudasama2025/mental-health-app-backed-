@@ -1,10 +1,11 @@
-import { exec, spawn } from 'child_process';
-import { promisify } from 'util';
-import { google } from 'googleapis';
-import { Readable } from 'stream';
-import { dbConfig } from '../config/database';
+import {exec, spawn} from 'child_process';
+import {promisify} from 'util';
+import {google} from 'googleapis';
+import {Readable} from 'stream';
+import {dbConfig} from '../config/database';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+
 dotenv.config();
 
 const execAsync = promisify(exec);

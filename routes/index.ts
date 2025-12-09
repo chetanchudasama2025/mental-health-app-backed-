@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import {Router} from 'express';
 import authRoutes from './authRoutes';
 import therapistRoutes from './therapistRoutes';
 import userRoutes from './userRoutes';
@@ -7,7 +7,8 @@ import supportTicketRoutes from './supportTicketRoutes';
 import bookingRoutes from './bookingRoutes';
 import notificationRoutes from './notificationRoutes';
 import paymentRoutes from './paymentRoutes';
-import { conversationRouter, messageRouter } from './messageRoutes';
+import reviewRoutes from './reviewRoutes';
+import {conversationRouter, messageRouter} from './messageRoutes';
 
 const router = Router();
 
@@ -19,6 +20,7 @@ router.use('/support-tickets', supportTicketRoutes);
 router.use('/bookings', bookingRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/payments', paymentRoutes);
+router.use('/reviews', reviewRoutes);
 router.use('/conversations', conversationRouter);
 router.use('/messages', messageRouter);
 

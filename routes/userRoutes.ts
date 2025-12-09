@@ -1,16 +1,16 @@
-import { Router } from 'express';
+import {Router} from 'express';
 import {
   createUser,
-  getAllUsers,
-  getUserById,
-  getCurrentUser,
-  updateUser,
-  deleteUser,
   deleteCurrentUser,
+  deleteUser,
+  getAllUsers,
+  getCurrentUser,
+  getUserById,
+  updateUser,
 } from '../controllers/userController';
-import { authenticate } from '../middleware/authMiddleware';
-import { requireRole } from '../middleware/rbacMiddleware';
-import { upload } from '../middleware/uploadMiddleware';
+import {authenticate} from '../middleware/authMiddleware';
+import {requireRole} from '../middleware/rbacMiddleware';
+import {upload} from '../middleware/uploadMiddleware';
 
 const router = Router();
 

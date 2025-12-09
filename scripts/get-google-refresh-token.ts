@@ -1,4 +1,4 @@
-import { google } from 'googleapis';
+import {google} from 'googleapis';
 import * as readline from 'readline';
 import dotenv from 'dotenv';
 

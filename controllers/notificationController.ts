@@ -1,9 +1,9 @@
-import { Request, Response, NextFunction } from 'express';
+import {NextFunction, Request, Response} from 'express';
 import mongoose from 'mongoose';
-import Notification, { INotification } from '../models/Notification';
-import { CustomError } from '../middleware/errorHandler';
-import { AuthRequest } from '../middleware/authMiddleware';
-import { User } from '../models/User';
+import Notification, {INotification} from '../models/Notification';
+import {CustomError} from '../middleware/errorHandler';
+import {AuthRequest} from '../middleware/authMiddleware';
+import {User} from '../models/User';
 
 // Create a new notification
 export const createNotification = async (

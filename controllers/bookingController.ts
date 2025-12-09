@@ -1,11 +1,11 @@
-import { Request, Response, NextFunction } from 'express';
+import {NextFunction, Request, Response} from 'express';
 import mongoose from 'mongoose';
 import Booking from '../models/Booking';
 import Therapist from '../models/Therapist';
-import { User } from '../models/User';
-import { Payment } from '../models/Payment';
-import { CustomError } from '../middleware/errorHandler';
-import { AuthRequest } from '../middleware/authMiddleware';
+import {User} from '../models/User';
+import {Payment} from '../models/Payment';
+import {CustomError} from '../middleware/errorHandler';
+import {AuthRequest} from '../middleware/authMiddleware';
 
 // Create a new booking
 export const createBooking = async (
