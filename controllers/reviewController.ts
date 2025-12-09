@@ -4,7 +4,6 @@ import {TherapistReview, ITherapistReview} from '../models/Review';
 import {CustomError} from '../middleware/errorHandler';
 import {AuthRequest} from '../middleware/authMiddleware';
 import {uploadToCloudinary} from '../middleware/uploadMiddleware';
-import {User} from '../models/User';
 import Therapist from '../models/Therapist';
 import Booking from '../models/Booking';
 
