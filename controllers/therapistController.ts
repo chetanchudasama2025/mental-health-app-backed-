@@ -785,6 +785,97 @@ export const updateTherapist = async (
   }
 };
 
+// Update therapist status (Admin only)
+export const updateTherapistStatus = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { status, reviewNotes } = req.body;
+    const userId = req.user?._id;
+
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      const error: CustomError = new Error('Invalid therapist ID');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (!userId) {
+      const error: CustomError = new Error('User authentication required');
+      error.statusCode = 401;
+      throw error;
+    }
+
+    const user = await User.findOne({ _id: userId, deletedAt: null });
+    if (!user) {
+      const error: CustomError = new Error('User not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (user.role !== 'admin' && user.role !== 'superAdmin') {
+      const error: CustomError = new Error('Unauthorized. Only admins can update therapist status');
+      error.statusCode = 403;
+      throw error;
+    }
+
+    if (!status) {
+      const error: CustomError = new Error('Status is required');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const validStatuses = ["approved", "pending", "rejected", "underReview"];
+    if (!validStatuses.includes(status)) {
+      const error: CustomError = new Error('Invalid status. Status must be one of: approved, pending, rejected, or underReview');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const therapist = await Therapist.findOne({ _id: id, deletedAt: null });
+    if (!therapist) {
+      const error: CustomError = new Error('Therapist not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const updateData: Partial<ITherapist> = {
+      status: status,
+    };
+
+    if (reviewNotes !== undefined) {
+      updateData.reviewNotes = reviewNotes;
+    }
+
+    const updatedTherapist = await Therapist.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    ).populate('user', 'firstName lastName email role');
+
+    if (!updatedTherapist) {
+      const error: CustomError = new Error('Failed to update therapist status. Please try again.');
+      error.statusCode = 500;
+      throw error;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Therapist status updated successfully',
+      data: updatedTherapist,
+    });
+  } catch (error: any) {
+    if (error.name === 'ValidationError') {
+      const validationError: CustomError = new Error(`Validation error: ${error.message}`);
+      validationError.statusCode = 400;
+      return next(validationError);
+    }
+    next(error);
+  }
+};
+
 // Delete therapist
 export const deleteTherapist = async (
   req: AuthRequest,

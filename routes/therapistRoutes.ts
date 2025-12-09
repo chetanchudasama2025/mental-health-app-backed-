@@ -6,6 +6,7 @@ import {
   getTherapistById,
   getTherapistByUserId,
   updateTherapist,
+  updateTherapistStatus,
   getApprovedTherapists,
 } from '../controllers/therapistController';
 import {authenticate} from '../middleware/authMiddleware';
@@ -40,6 +41,13 @@ router.put(
   checkPermission('update', 'Therapist'),
   upload.any(),
   updateTherapist
+);
+router.patch(
+  '/:id/status',
+  authenticate,
+  requireRole('admin', 'superAdmin'),
+  checkPermission('update', 'Therapist'),
+  updateTherapistStatus
 );
 router.delete('/:id', authenticate, requireRole('admin'), checkPermission('delete', 'Therapist'), deleteTherapist);
 
