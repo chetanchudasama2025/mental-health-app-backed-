@@ -456,7 +456,7 @@ export const forgotPassword = async (
       expiresAt,
     });
 
-    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+    const resetLink = `${process.env.FRONTEND_URL}/auth/forgotPassword?token=${resetToken}`;
 
     try {
       const transporter = createTransporter();
