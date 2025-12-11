@@ -931,151 +931,121 @@ export const getApprovedTherapists = async (
     req: Request,
     res: Response,
     next: NextFunction
-): Promise<void> => {
+): Promise<Response | void> => {
   try {
     const {
-      page = '1',
-      limit = '10',
+      page = "1",
+      limit = "10",
       search,
       specialization,
       language,
       minPrice,
       maxPrice,
-      serviceEnabled,
     } = req.query;
 
-    const pageNum = parseInt(page as string, 10);
-    const limitNum = parseInt(limit as string, 10);
+    const pageNum = Number(page) || 1;
+    const limitNum = Number(limit) || 10;
     const skip = (pageNum - 1) * limitNum;
+
+    const toArray = (val: any): string[] => {
+      if (!val) return [];
+      if (Array.isArray(val)) return val.map((v) => String(v));
+      return String(val).split(",").map((s) => s.trim()).filter(Boolean);
+    };
 
     const therapistQuery: any = {
       deletedAt: null,
-      status: 'approved'
+      status: "approved",
+      "certifications.0": {$exists: true},
+      "education.0": {$exists: true},
+      "experience.0": {$exists: true},
+
+      certifications: {$not: {$elemMatch: {status: {$ne: "valid"}}}},
+      education: {$not: {$elemMatch: {status: {$ne: "valid"}}}},
+      experience: {$not: {$elemMatch: {status: {$ne: "valid"}}}},
     };
 
     if (search) {
+      const s = String(search);
       therapistQuery.$or = [
-        {firstName: {$regex: search, $options: 'i'}},
-        {lastName: {$regex: search, $options: 'i'}},
-        {email: {$regex: search, $options: 'i'}},
-        {bio: {$regex: search, $options: 'i'}},
+        {firstName: {$regex: s, $options: "i"}},
+        {lastName: {$regex: s, $options: "i"}},
+        {email: {$regex: s, $options: "i"}},
+        {bio: {$regex: s, $options: "i"}},
       ];
     }
 
-    if (specialization) {
-      let specializationsArray: string[] = [];
-      if (Array.isArray(specialization)) {
-        specializationsArray = specialization as string[];
-      } else if (typeof specialization === 'string') {
-        specializationsArray = specialization.split(',').map(s => s.trim()).filter(s => s);
-      }
+    const specArr = toArray(specialization);
+    if (specArr.length > 0) therapistQuery.specializations = {$in: specArr};
 
-      if (specializationsArray.length > 0) {
-        therapistQuery.specializations = {$in: specializationsArray};
+    const langArr = toArray(language);
+    if (langArr.length > 0) therapistQuery.languages = {$in: langArr};
+
+    const availabilityQuery: any = {
+      serviceEnabled: true,
+      "availabilityCalendar.isAvailable": true,
+    };
+
+    if (minPrice !== undefined && minPrice !== null && String(minPrice).trim() !== "") {
+      const minNum = Number(minPrice);
+      if (!Number.isNaN(minNum)) {
+        availabilityQuery.price = {...(availabilityQuery.price || {}), $gte: minNum};
+      }
+    }
+    if (maxPrice !== undefined && maxPrice !== null && String(maxPrice).trim() !== "") {
+      const maxNum = Number(maxPrice);
+      if (!Number.isNaN(maxNum)) {
+        availabilityQuery.price = {...(availabilityQuery.price || {}), $lte: maxNum};
       }
     }
 
-    if (language) {
-      let languagesArray: string[] = [];
-      if (Array.isArray(language)) {
-        languagesArray = language as string[];
-      } else if (typeof language === 'string') {
-        languagesArray = language.split(',').map(l => l.trim()).filter(l => l);
-      }
+    const availabilityDocs = await Availability.find(availabilityQuery).lean();
 
-      if (languagesArray.length > 0) {
-        therapistQuery.languages = {$in: languagesArray};
-      }
+    const availableIds = availabilityDocs
+        .map((a: any) => (a && a.therapistId ? String(a.therapistId) : null))
+        .filter(Boolean);
+
+    if (!availableIds.length) {
+      return res.status(200).json({
+        success: true,
+        message: "Therapists retrieved successfully",
+        data: {
+          therapists: [],
+          pagination: {page: pageNum, limit: limitNum, total: 0, pages: 0},
+        },
+      });
     }
 
-    const availabilityQuery: any = {};
-    const hasAvailabilityFilters = minPrice !== undefined || maxPrice !== undefined || serviceEnabled !== undefined;
-
-    if (minPrice !== undefined || maxPrice !== undefined) {
-      availabilityQuery.price = {};
-      if (minPrice !== undefined) {
-        const minPriceNum = parseFloat(minPrice as string);
-        if (!isNaN(minPriceNum)) {
-          availabilityQuery.price.$gte = minPriceNum;
-        }
-      }
-      if (maxPrice !== undefined) {
-        const maxPriceNum = parseFloat(maxPrice as string);
-        if (!isNaN(maxPriceNum)) {
-          availabilityQuery.price.$lte = maxPriceNum;
-        }
-      }
-    }
-
-    if (serviceEnabled !== undefined) {
-      const serviceEnabledValue = Array.isArray(serviceEnabled)
-          ? serviceEnabled[0]
-          : serviceEnabled;
-      const serviceEnabledStr = String(serviceEnabledValue);
-      availabilityQuery.serviceEnabled = serviceEnabledStr === 'true' || serviceEnabledStr === '1';
-    }
-
-    let matchingTherapistIds: mongoose.Types.ObjectId[] | null = null;
-
-    if (hasAvailabilityFilters) {
-      const matchingAvailabilities = await Availability.find(availabilityQuery).select('therapistId');
-      matchingTherapistIds = matchingAvailabilities.map(av => av.therapistId as mongoose.Types.ObjectId);
-
-      if (matchingTherapistIds.length === 0) {
-        res.status(200).json({
-          success: true,
-          message: 'Approved therapists retrieved successfully',
-          data: {
-            therapists: [],
-            pagination: {
-              page: pageNum,
-              limit: limitNum,
-              total: 0,
-              pages: 0,
-            },
-          },
-        });
-        return;
-      }
-
-      therapistQuery._id = {$in: matchingTherapistIds};
-    }
+    therapistQuery._id = {
+      $in: availableIds
+          .filter((id) => id !== null && id !== undefined)
+          .map((id) => new mongoose.Types.ObjectId(String(id)))
+    };
 
     const total = await Therapist.countDocuments(therapistQuery);
 
     const therapists = await Therapist.find(therapistQuery)
-        .populate('user', 'firstName lastName email role')
+        .populate("user", "firstName lastName email role")
         .skip(skip)
         .limit(limitNum)
-        .sort({createdAt: -1});
+        .sort({createdAt: -1})
+        .lean();
 
-    const therapistsWithAvailability = await Promise.all(
-        therapists.map(async (therapist) => {
-          const therapistObj = therapist.toObject();
+    const finalList = therapists.map((t: any) => {
+      const av = availabilityDocs.find(
+          (a: any) => String(a.therapistId) === String(t._id)
+      );
+      return {
+        ...t,
+        availability: av || null,
+      };
+    });
 
-          let availability = null;
-          if (hasAvailabilityFilters && matchingTherapistIds) {
-            const availabilityQueryForTherapist = {
-              therapistId: therapist._id,
-              ...availabilityQuery
-            };
-            availability = await Availability.findOne(availabilityQueryForTherapist);
-          } else {
-            availability = await Availability.findOne({therapistId: therapist._id});
-          }
-
-          return {
-            ...therapistObj,
-            availability: availability || null,
-          };
-        })
-    );
-
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: 'Approved therapists retrieved successfully',
+      message: "Therapists retrieved successfully",
       data: {
-        therapists: therapistsWithAvailability,
+        therapists: finalList,
         pagination: {
           page: pageNum,
           limit: limitNum,
@@ -1088,4 +1058,3 @@ export const getApprovedTherapists = async (
     next(error);
   }
 };
-

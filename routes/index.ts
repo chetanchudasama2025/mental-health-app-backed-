@@ -9,6 +9,7 @@ import notificationRoutes from './notificationRoutes';
 import paymentRoutes from './paymentRoutes';
 import reviewRoutes from './reviewRoutes';
 import {conversationRouter, messageRouter} from './messageRoutes';
+import contactRoutes from "./contactRoutes";
 
 const router = Router();
 
@@ -23,6 +24,7 @@ router.use('/payments', paymentRoutes);
 router.use('/reviews', reviewRoutes);
 router.use('/conversations', conversationRouter);
 router.use('/messages', messageRouter);
+router.use("/contact", contactRoutes);
 
 export { router as routes };
 
