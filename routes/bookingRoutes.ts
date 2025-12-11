@@ -7,13 +7,15 @@ import {
   getBookingById,
   getBookingsByTherapist,
   getMyBookings,
-  updateBooking,
+  processPaymentAndCreateBooking,
+  updateBooking
 } from '../controllers/bookingController';
 import {authenticate} from '../middleware/authMiddleware';
 import {checkPermission, requireRole} from '../middleware/rbacMiddleware';
 
 const router = Router();
 
+router.post('/process-payment-and-create-booking', authenticate, processPaymentAndCreateBooking);
 router.post('/', authenticate, checkPermission('create', 'Booking'), createBooking);
 router.get('/', authenticate, requireRole('admin'), getAllBookings);
 router.get('/my-bookings', authenticate, getMyBookings);

@@ -3,11 +3,11 @@ import {
   createTherapist,
   deleteTherapist,
   getAllTherapists,
+  getApprovedTherapists,
   getTherapistById,
   getTherapistByUserId,
   updateTherapist,
   updateTherapistStatus,
-  getApprovedTherapists,
 } from '../controllers/therapistController';
 import {authenticate} from '../middleware/authMiddleware';
 import {upload} from '../middleware/uploadMiddleware';

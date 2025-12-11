@@ -1,4 +1,4 @@
- import express, {Application} from 'express';
+import express, {Application} from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import {createServer} from 'http';

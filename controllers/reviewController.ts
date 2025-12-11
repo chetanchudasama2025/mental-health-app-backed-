@@ -1,6 +1,6 @@
 import {NextFunction, Request, Response} from 'express';
 import mongoose from 'mongoose';
-import {TherapistReview, ITherapistReview} from '../models/Review';
+import {ITherapistReview, TherapistReview} from '../models/Review';
 import {CustomError} from '../middleware/errorHandler';
 import {AuthRequest} from '../middleware/authMiddleware';
 import {uploadToCloudinary} from '../middleware/uploadMiddleware';

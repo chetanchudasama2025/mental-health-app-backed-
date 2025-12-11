@@ -519,12 +519,52 @@ The API uses a centralized error handler. All errors follow this structure:
 
 ### Using Postman
 
-A complete Postman collection is included: `Mental_Health_App_API.postman_collection.json`
+A complete, properly organized Postman collection is included with comprehensive documentation:
 
-1. Import the collection into Postman
-2. Set the `baseUrl` variable (default: `http://localhost:3000`)
-3. Register/Login to get `authToken` (automatically saved)
-4. Test all endpoints
+**Files:**
+
+- `Mental_Health_App_API.postman_collection.json` - Complete API collection organized by modules
+- `Mental_Health_App_API.postman_environment.json` - Environment variables for easy setup
+- `POSTMAN_COLLECTION_GUIDE.md` - Comprehensive guide with detailed instructions
+- `POSTMAN_QUICK_REFERENCE.md` - Quick reference for all endpoints
+
+**Quick Start:**
+
+1. Import both the collection and environment into Postman
+2. Select "Mental Health App - Development" environment
+3. Update `baseUrl` if needed (default: `http://localhost:3000`)
+4. Test the Health Check endpoint first
+5. Register/Login to get tokens (automatically saved to environment)
+6. Start testing endpoints by module
+
+**Collection Structure:**
+
+-
+    01. Health Check
+-
+    02. Authentication (17 endpoints)
+-
+    03. Users (7 endpoints)
+-
+    04. Therapists (8 endpoints)
+-
+    05. Availabilities (6 endpoints)
+-
+    06. Bookings (9 endpoints)
+-
+    07. Payments (8 endpoints)
+-
+    08. Messages & Conversations (8 endpoints)
+-
+    09. Notifications (8 endpoints)
+-
+    10. Support Tickets (5 endpoints)
+-
+    11. Reviews (7 endpoints)
+-
+    12. Contact Us (5 endpoints)
+
+**See `POSTMAN_COLLECTION_GUIDE.md` for detailed usage instructions and workflows.**
 
 ### Manual Testing
 

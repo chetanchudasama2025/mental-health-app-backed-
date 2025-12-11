@@ -10,4 +10,5 @@ export * from './Availability';
 export * from './Booking';
 export * from './Payment';
 export * from './Notification';
+export * from './ContactUs';
 

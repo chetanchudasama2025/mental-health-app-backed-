@@ -4,8 +4,136 @@ import Booking from '../models/Booking';
 import Therapist from '../models/Therapist';
 import {User} from '../models/User';
 import {Payment} from '../models/Payment';
+import Stripe from 'stripe';
 import {CustomError} from '../middleware/errorHandler';
 import {AuthRequest} from '../middleware/authMiddleware';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
+
+// Process payment and create booking
+export const processPaymentAndCreateBooking = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+  try {
+    const {
+      amount,
+      patientId,
+      therapistId,
+      date,
+      time,
+      duration,
+      paymentMethodId,
+    } = req.body;
+
+    if (!amount || amount <= 0) {
+      const error: CustomError = new Error('Amount is required');
+      error.statusCode = 400;
+      throw error;
+    }
+    if (!patientId) {
+      const error: CustomError = new Error('patientId required');
+      error.statusCode = 400;
+      throw error;
+    }
+    if (!therapistId) {
+      const error: CustomError = new Error('therapistId required');
+      error.statusCode = 400;
+      throw error;
+    }
+    if (!paymentMethodId) {
+      const error: CustomError = new Error('paymentMethodId required');
+      error.statusCode = 400;
+      throw error;
+    }
+    if (!date || !time || !duration) {
+      const error: CustomError = new Error('Booking details missing');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const patient = await User.findById(patientId);
+    if (!patient) {
+      const error: CustomError = new Error('Patient not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amount * 100,
+      currency: "usd",
+
+      automatic_payment_methods: {
+        enabled: true,
+        allow_redirects: "never",
+      },
+
+      payment_method: paymentMethodId,
+      confirm: true,
+
+      metadata: {patientId, therapistId},
+    });
+
+
+    let finalStatus: "pending" | "succeeded" | "failed" = "pending";
+    if (paymentIntent.status === "succeeded") finalStatus = "succeeded";
+    else if (paymentIntent.status === "requires_payment_method")
+      finalStatus = "failed";
+
+    let receiptUrl = null;
+    let paymentMethod = null;
+
+    if (paymentIntent.latest_charge) {
+      const charge = await stripe.charges.retrieve(
+          paymentIntent.latest_charge as string
+      );
+      receiptUrl = charge.receipt_url ?? null;
+      paymentMethod = charge.payment_method_details?.type ?? null;
+    }
+
+    const payment = await Payment.create({
+      user: patientId,
+      amount,
+      currency: "usd",
+      paymentIntentId: paymentIntent.id,
+      clientSecret: paymentIntent.client_secret,
+      status: finalStatus,
+      receiptUrl,
+      paymentMethod,
+      metadata: {patientId, therapistId},
+    });
+
+    if (finalStatus !== "succeeded") {
+      res.status(400).json({
+        success: false,
+        message: "Payment failed",
+        payment,
+        stripePayment: paymentIntent,
+      });
+    }
+
+    const booking = await Booking.create({
+      patient: patientId,
+      therapist: therapistId,
+      date,
+      time,
+      duration,
+      payment: payment._id,
+      status: "confirmed",
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Payment successful & booking created",
+      payment,
+      booking,
+      stripePayment: paymentIntent,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 
 // Create a new booking
 export const createBooking = async (

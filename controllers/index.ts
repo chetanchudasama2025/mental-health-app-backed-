@@ -7,3 +7,4 @@ export * from './availabilityController';
 export * from './notificationController';
 export * from './messageController';
 export * from './paymentController';
+export * from './contactController';

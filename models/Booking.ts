@@ -52,7 +52,6 @@ const BookingSchema = new Schema<IBooking>(
         },
         notes: {
             type: String,
-            maxlength: 1000,
         },
         cancelledAt: Date,
         cancellationReason: String,

@@ -1,4 +1,4 @@
-import { Document, model, Schema } from "mongoose";
+import {Document, model, Schema} from "mongoose";
 
 export interface IPhoneVerificationToken extends Document {
   phone: string;
