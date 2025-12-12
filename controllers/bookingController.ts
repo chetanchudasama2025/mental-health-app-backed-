@@ -1,9 +1,10 @@
 import {NextFunction, Request, Response} from 'express';
 import mongoose from 'mongoose';
-import Booking from '../models/Booking';
-import Therapist from '../models/Therapist';
 import {User} from '../models/User';
 import {Payment} from '../models/Payment';
+import Booking from '../models/Booking';
+import Therapist from '../models/Therapist';
+import Availability from '../models/Availability';
 import Stripe from 'stripe';
 import {CustomError} from '../middleware/errorHandler';
 import {AuthRequest} from '../middleware/authMiddleware';
@@ -15,7 +16,7 @@ export const processPaymentAndCreateBooking = async (
     req: AuthRequest,
     res: Response,
     next: NextFunction
-): Promise<void> => {
+): Promise<Response | void> => {
   try {
     const {
       amount,
@@ -27,59 +28,72 @@ export const processPaymentAndCreateBooking = async (
       paymentMethodId,
     } = req.body;
 
-    if (!amount || amount <= 0) {
-      const error: CustomError = new Error('Amount is required');
-      error.statusCode = 400;
-      throw error;
-    }
-    if (!patientId) {
-      const error: CustomError = new Error('patientId required');
-      error.statusCode = 400;
-      throw error;
-    }
-    if (!therapistId) {
-      const error: CustomError = new Error('therapistId required');
-      error.statusCode = 400;
-      throw error;
-    }
-    if (!paymentMethodId) {
-      const error: CustomError = new Error('paymentMethodId required');
-      error.statusCode = 400;
-      throw error;
-    }
-    if (!date || !time || !duration) {
-      const error: CustomError = new Error('Booking details missing');
-      error.statusCode = 400;
-      throw error;
-    }
+    if (!amount || amount <= 0)
+      return res.status(400).json({success: false, message: "Amount is required"});
+
+    if (!patientId)
+      return res.status(400).json({success: false, message: "patientId required"});
+
+    if (!therapistId)
+      return res.status(400).json({success: false, message: "therapistId required"});
+
+    if (!paymentMethodId)
+      return res.status(400).json({success: false, message: "paymentMethodId required"});
+
+    if (!date || !time || !duration)
+      return res.status(400).json({success: false, message: "Booking details missing"});
 
     const patient = await User.findById(patientId);
-    if (!patient) {
-      const error: CustomError = new Error('Patient not found');
-      error.statusCode = 404;
-      throw error;
+    if (!patient)
+      return res.status(404).json({success: false, message: "Patient not found"});
+
+    const bookingDate = new Date(date);
+    const [H, M] = time.split(":");
+    const requestedStart = Number(H) * 60 + Number(M);
+    const requestedEnd = requestedStart + Number(duration);
+
+    const availability = await Availability.findOne({therapistId}).lean();
+    const bufferMinutes = availability?.bufferTime
+        ? parseInt(availability.bufferTime)
+        : 15;
+
+
+    const existingBookings = await Booking.find({
+      therapist: therapistId,
+      date: bookingDate,
+      status: {$in: ["pending", "confirmed"]},
+    }).lean();
+
+    for (const b of existingBookings) {
+      const [bh, bm] = b.time.split(":");
+      const existingStart = Number(bh) * 60 + Number(bm);
+      const existingEnd = existingStart + b.duration;
+
+      const existingEndWithBuffer = existingEnd + bufferMinutes;
+
+      const isConflict =
+          existingStart < requestedEnd &&
+          existingEndWithBuffer > requestedStart;
+
+      if (isConflict) {
+        return res.status(400).json({
+          success: false,
+          message: `This slot is unavailable. Therapist has a session ending at ${b.time} and requires a ${bufferMinutes} min buffer.`,
+        });
+      }
     }
 
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount * 100,
       currency: "usd",
-
-      automatic_payment_methods: {
-        enabled: true,
-        allow_redirects: "never",
-      },
-
+      automatic_payment_methods: {enabled: true, allow_redirects: "never"},
       payment_method: paymentMethodId,
       confirm: true,
-
       metadata: {patientId, therapistId},
     });
 
-
-    let finalStatus: "pending" | "succeeded" | "failed" = "pending";
-    if (paymentIntent.status === "succeeded") finalStatus = "succeeded";
-    else if (paymentIntent.status === "requires_payment_method")
-      finalStatus = "failed";
+    const finalStatus =
+        paymentIntent.status === "succeeded" ? "succeeded" : "failed";
 
     let receiptUrl = null;
     let paymentMethod = null;
@@ -105,11 +119,10 @@ export const processPaymentAndCreateBooking = async (
     });
 
     if (finalStatus !== "succeeded") {
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
         message: "Payment failed",
         payment,
-        stripePayment: paymentIntent,
       });
     }
 
@@ -123,11 +136,11 @@ export const processPaymentAndCreateBooking = async (
       status: "confirmed",
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Payment successful & booking created",
-      payment,
       booking,
+      payment,
       stripePayment: paymentIntent,
     });
   } catch (error) {

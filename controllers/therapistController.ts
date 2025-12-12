@@ -941,6 +941,7 @@ export const getApprovedTherapists = async (
       language,
       minPrice,
       maxPrice,
+      serviceEnabled,
     } = req.query;
 
     const pageNum = Number(page) || 1;
@@ -981,6 +982,10 @@ export const getApprovedTherapists = async (
     const langArr = toArray(language);
     if (langArr.length > 0) therapistQuery.languages = {$in: langArr};
 
+    if (serviceEnabled !== undefined) {
+      therapistQuery.serviceEnabled = serviceEnabled === "true";
+    }
+
     const availabilityQuery: any = {
       serviceEnabled: true,
       "availabilityCalendar.isAvailable": true,
@@ -992,6 +997,7 @@ export const getApprovedTherapists = async (
         availabilityQuery.price = {...(availabilityQuery.price || {}), $gte: minNum};
       }
     }
+
     if (maxPrice !== undefined && maxPrice !== null && String(maxPrice).trim() !== "") {
       const maxNum = Number(maxPrice);
       if (!Number.isNaN(maxNum)) {
@@ -1002,7 +1008,7 @@ export const getApprovedTherapists = async (
     const availabilityDocs = await Availability.find(availabilityQuery).lean();
 
     const availableIds = availabilityDocs
-        .map((a: any) => (a && a.therapistId ? String(a.therapistId) : null))
+        .map((a: any) => (a?.therapistId ? String(a.therapistId) : null))
         .filter(Boolean);
 
     if (!availableIds.length) {
@@ -1017,9 +1023,7 @@ export const getApprovedTherapists = async (
     }
 
     therapistQuery._id = {
-      $in: availableIds
-          .filter((id) => id !== null && id !== undefined)
-          .map((id) => new mongoose.Types.ObjectId(String(id)))
+      $in: availableIds.map((id) => new mongoose.Types.ObjectId(String(id))),
     };
 
     const total = await Therapist.countDocuments(therapistQuery);
