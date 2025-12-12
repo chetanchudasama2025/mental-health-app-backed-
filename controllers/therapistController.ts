@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import Therapist, {ITherapist} from '../models/Therapist';
 import {User} from '../models/User';
 import Availability from '../models/Availability';
+import { TherapistReview  } from "../models/Review";
 import {CustomError} from '../middleware/errorHandler';
 import {AuthRequest} from '../middleware/authMiddleware';
 import {uploadToCloudinary} from '../middleware/uploadMiddleware';
@@ -950,8 +951,11 @@ export const getApprovedTherapists = async (
 
     const toArray = (val: any): string[] => {
       if (!val) return [];
-      if (Array.isArray(val)) return val.map((v) => String(v));
-      return String(val).split(",").map((s) => s.trim()).filter(Boolean);
+      if (Array.isArray(val)) return val.map(String);
+      return String(val)
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
     };
 
     const therapistQuery: any = {
@@ -977,10 +981,10 @@ export const getApprovedTherapists = async (
     }
 
     const specArr = toArray(specialization);
-    if (specArr.length > 0) therapistQuery.specializations = {$in: specArr};
+    if (specArr.length) therapistQuery.specializations = {$in: specArr};
 
     const langArr = toArray(language);
-    if (langArr.length > 0) therapistQuery.languages = {$in: langArr};
+    if (langArr.length) therapistQuery.languages = {$in: langArr};
 
     if (serviceEnabled !== undefined) {
       therapistQuery.serviceEnabled = serviceEnabled === "true";
@@ -991,25 +995,18 @@ export const getApprovedTherapists = async (
       "availabilityCalendar.isAvailable": true,
     };
 
-    if (minPrice !== undefined && minPrice !== null && String(minPrice).trim() !== "") {
-      const minNum = Number(minPrice);
-      if (!Number.isNaN(minNum)) {
-        availabilityQuery.price = {...(availabilityQuery.price || {}), $gte: minNum};
-      }
+    if (minPrice) {
+      availabilityQuery.price = {...(availabilityQuery.price || {}), $gte: Number(minPrice)};
     }
-
-    if (maxPrice !== undefined && maxPrice !== null && String(maxPrice).trim() !== "") {
-      const maxNum = Number(maxPrice);
-      if (!Number.isNaN(maxNum)) {
-        availabilityQuery.price = {...(availabilityQuery.price || {}), $lte: maxNum};
-      }
+    if (maxPrice) {
+      availabilityQuery.price = {...(availabilityQuery.price || {}), $lte: Number(maxPrice)};
     }
 
     const availabilityDocs = await Availability.find(availabilityQuery).lean();
 
     const availableIds = availabilityDocs
-        .map((a: any) => (a?.therapistId ? String(a.therapistId) : null))
-        .filter(Boolean);
+        .map((a: any) => a?.therapistId ? String(a.therapistId) : null)
+        .filter((id: string | null): id is string => id !== null);
 
     if (!availableIds.length) {
       return res.status(200).json({
@@ -1023,7 +1020,7 @@ export const getApprovedTherapists = async (
     }
 
     therapistQuery._id = {
-      $in: availableIds.map((id) => new mongoose.Types.ObjectId(String(id))),
+      $in: availableIds.map((id: string) => new mongoose.Types.ObjectId(id)),
     };
 
     const total = await Therapist.countDocuments(therapistQuery);
@@ -1035,15 +1032,36 @@ export const getApprovedTherapists = async (
         .sort({createdAt: -1})
         .lean();
 
-    const finalList = therapists.map((t: any) => {
-      const av = availabilityDocs.find(
-          (a: any) => String(a.therapistId) === String(t._id)
-      );
-      return {
-        ...t,
-        availability: av || null,
-      };
-    });
+    const finalList = await Promise.all(
+        therapists.map(async (t: any) => {
+          const av = availabilityDocs.find(
+              (a: any) => String(a.therapistId) === String(t._id)
+          );
+
+          const reviews = await TherapistReview.find({
+            therapist: t._id,
+            status: "approved",
+            deletedAt: null,
+          })
+              .select("rating review isAnonymous reviewer createdAt")
+              .populate("reviewer", "firstName lastName profilePhoto")
+              .lean();
+
+          const totalReviews = reviews.length;
+          const averageRating =
+              totalReviews > 0
+                  ? reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / totalReviews
+                  : 0;
+
+          return {
+            ...t,
+            availability: av || null,
+            reviews,
+            totalReviews,
+            averageRating: Number(averageRating.toFixed(1)),
+          };
+        })
+    );
 
     return res.status(200).json({
       success: true,
@@ -1061,4 +1079,4 @@ export const getApprovedTherapists = async (
   } catch (error) {
     next(error);
   }
-};
+}

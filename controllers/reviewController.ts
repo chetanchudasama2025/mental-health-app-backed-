@@ -72,7 +72,6 @@ export const createReview = async (
       throw error;
     }
 
-    // Verify therapist exists
     const therapist = await Therapist.findOne({ _id: therapistId, deletedAt: null });
     if (!therapist) {
       const error: CustomError = new Error('Therapist not found');
@@ -80,8 +79,7 @@ export const createReview = async (
       throw error;
     }
 
-    // Verify session exists and belongs to the reviewer
-    const session = await Booking.findOne({ 
+    const session = await Booking.findOne({
       _id: sessionId, 
       deletedAt: null,
       patient: reviewerId 
@@ -92,14 +90,12 @@ export const createReview = async (
       throw error;
     }
 
-    // Verify session is completed
     if (session.status !== 'completed') {
       const error: CustomError = new Error('You can only review completed sessions');
       error.statusCode = 400;
       throw error;
     }
 
-    // Check if review already exists for this session
     const existingReview = await TherapistReview.findOne({
       sessionId: new mongoose.Types.ObjectId(sessionId),
       reviewer: new mongoose.Types.ObjectId(reviewerId),
@@ -112,7 +108,6 @@ export const createReview = async (
       throw error;
     }
 
-    // Verify therapist matches the session
     if (session.therapist.toString() !== therapistId) {
       const error: CustomError = new Error('Therapist ID does not match the session therapist');
       error.statusCode = 400;
@@ -131,7 +126,6 @@ export const createReview = async (
       attachments: [],
     });
 
-    // Handle file uploads if any
     const files = (req as any).files;
     if (files && Array.isArray(files) && files.length > 0) {
       const reviewId = (newReview._id as mongoose.Types.ObjectId).toString();
@@ -331,7 +325,6 @@ export const getReviewsByTherapist = async (
 
     const total = await TherapistReview.countDocuments(query);
 
-    // Calculate average rating
     const ratingStats = await TherapistReview.aggregate([
       {
         $match: {
@@ -358,7 +351,6 @@ export const getReviewsByTherapist = async (
       ratingDistribution: [],
     };
 
-    // Calculate rating distribution
     const distribution = {
       5: stats.ratingDistribution.filter((r: number) => r === 5).length,
       4: stats.ratingDistribution.filter((r: number) => r === 4).length,
@@ -525,7 +517,6 @@ export const updateReview = async (
       throw error;
     }
 
-    // Check permissions: reviewer can update their own review (if pending), admins can update status
     const isOwner = userId && existingReview.reviewer.toString() === userId;
     const isAdmin = userRole === 'admin' || userRole === 'superAdmin' || userRole === 'contentModerator';
 
@@ -535,7 +526,6 @@ export const updateReview = async (
       throw error;
     }
 
-    // Reviewers can only update pending reviews
     if (isOwner && !isAdmin && existingReview.status !== 'pending') {
       const error: CustomError = new Error('You can only update pending reviews');
       error.statusCode = 400;
@@ -544,7 +534,6 @@ export const updateReview = async (
 
     const updateData: Partial<ITherapistReview> = {};
 
-    // Handle file uploads
     const files = (req as any).files;
     let attachments: string[] = bodyAttachments || existingReview.attachments || [];
 
@@ -563,7 +552,6 @@ export const updateReview = async (
       }
     }
 
-    // Only reviewers can update these fields
     if (isOwner && !isAdmin) {
       if (rating !== undefined) {
         if (rating < 1 || rating > 5 || !Number.isInteger(Number(rating))) {
@@ -607,7 +595,6 @@ export const updateReview = async (
       }
     }
 
-    // Only admins can update status
     if (isAdmin && status !== undefined) {
       if (!['pending', 'approved', 'rejected'].includes(status)) {
         const error: CustomError = new Error('Invalid status. Must be one of: pending, approved, rejected');
@@ -617,7 +604,6 @@ export const updateReview = async (
       updateData.status = status;
     }
 
-    // Admins can also update remarks
     if (isAdmin && remarks !== undefined) {
       updateData.remarks = remarks ? remarks.trim() : null;
     }
@@ -672,7 +658,6 @@ export const deleteReview = async (
       throw error;
     }
 
-    // Check permissions: reviewer can delete their own review, admins can delete any
     const isOwner = userId && review.reviewer.toString() === userId;
     const isAdmin = userRole === 'admin' || userRole === 'superAdmin' || userRole === 'contentModerator';
 
