@@ -22,6 +22,7 @@ export const createPayment = async (
             paymentMethod,
             cardHolderName,
             description,
+            address,
             metadata,
         } = req.body;
 
@@ -79,6 +80,7 @@ export const createPayment = async (
             paymentMethod: paymentMethod || null,
             cardHolderName: cardHolderName || null,
             description: description || null,
+            address: address || undefined,
             metadata: metadata || {},
         });
 
@@ -438,6 +440,7 @@ export const updatePayment = async (
             paymentMethod,
             cardHolderName,
             description,
+            address,
             metadata,
         } = req.body;
 
@@ -500,6 +503,10 @@ export const updatePayment = async (
 
         if (description !== undefined) {
             payment.description = description || null;
+        }
+
+        if (address !== undefined) {
+            payment.address = address || undefined;
         }
 
         if (metadata !== undefined) {

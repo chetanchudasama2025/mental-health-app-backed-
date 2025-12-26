@@ -26,6 +26,7 @@ export const processPaymentAndCreateBooking = async (
             time,
             duration,
             paymentMethodId,
+            address,
         } = req.body;
 
         if (!amount || amount <= 0)
@@ -83,14 +84,92 @@ export const processPaymentAndCreateBooking = async (
             }
         }
 
-        const paymentIntent = await stripe.paymentIntents.create({
+        let paymentMethodCardHolderName: string | null = null;
+        try {
+            const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
+            paymentMethodCardHolderName = paymentMethod.billing_details?.name || null;
+        } catch (pmError) {
+            console.warn('Failed to retrieve payment method:', pmError);
+        }
+
+        let billingDetails: any = null;
+        let shippingDetails: any = null;
+        
+        if (address) {
+            const addressDetails = {
+                line1: address.line1,
+                ...(address.line2 && {line2: address.line2}),
+                city: address.city,
+                state: address.state,
+                postal_code: address.postalCode,
+                country: address.country,
+            };
+
+            const billingName = paymentMethodCardHolderName || `${patient.firstName} ${patient.lastName}`;
+
+            billingDetails = {
+                address: addressDetails,
+                name: billingName,
+                email: patient.email,
+            };
+
+            shippingDetails = {
+                address: addressDetails,
+                name: billingName,
+            };
+        }
+
+        let stripeCustomerId: string | null = null;
+        try {
+            const existingCustomers = await stripe.customers.list({
+                email: patient.email,
+                limit: 1,
+            });
+
+            if (existingCustomers.data.length > 0) {
+                stripeCustomerId = existingCustomers.data[0].id;
+            } else {
+                const customer = await stripe.customers.create({
+                    email: patient.email,
+                    name: `${patient.firstName} ${patient.lastName}`,
+                    metadata: {
+                        userId: patientId.toString(),
+                    },
+                });
+                stripeCustomerId = customer.id;
+            }
+
+            await stripe.paymentMethods.attach(paymentMethodId, {
+                customer: stripeCustomerId,
+            });
+
+            if (billingDetails) {
+                await stripe.paymentMethods.update(paymentMethodId, {
+                    billing_details: billingDetails,
+                });
+            }
+        } catch (customerError) {
+            console.warn('Failed to create/retrieve customer or update payment method:', customerError);
+        }
+
+        const paymentIntentParams: Stripe.PaymentIntentCreateParams = {
             amount: amount * 100,
             currency: "usd",
             automatic_payment_methods: {enabled: true, allow_redirects: "never"},
             payment_method: paymentMethodId,
             confirm: true,
             metadata: {patientId, therapistId},
-        });
+        };
+
+        if (stripeCustomerId) {
+            paymentIntentParams.customer = stripeCustomerId;
+        }
+
+        if (shippingDetails) {
+            paymentIntentParams.shipping = shippingDetails;
+        }
+
+        const paymentIntent = await stripe.paymentIntents.create(paymentIntentParams);
 
         const finalStatus =
             paymentIntent.status === "succeeded" ? "succeeded" : "failed";
@@ -132,6 +211,7 @@ export const processPaymentAndCreateBooking = async (
             receiptUrl,
             paymentMethod,
             cardHolderName,
+            address: address || undefined,
             metadata: {patientId, therapistId},
         });
 
@@ -367,7 +447,7 @@ export const getAllBookings = async (
         }
 
         const bookings = await Booking.find(filter)
-            .populate('therapist', 'firstName lastName email profilePhotoUrl')
+            .populate('therapist', 'firstName lastName email profilePhoto')
             .populate('patient', 'firstName lastName email')
             .populate('payment')
             .sort({date: -1, time: -1})
@@ -410,7 +490,7 @@ export const getBookingById = async (
         }
 
         const booking = await Booking.findById(id)
-            .populate('therapist', 'firstName lastName email profilePhotoUrl bio specializations')
+            .populate('therapist', 'firstName lastName email profilePhoto bio specializations')
             .populate('patient', 'firstName lastName email')
             .populate('payment');
 
@@ -511,7 +591,6 @@ export const getMyBookings = async (
 ): Promise<void> => {
     try {
         const patientId = req.user?._id;
-        const {status, date, page = '1', limit = '10'} = req.query;
 
         if (!patientId) {
             const error: CustomError = new Error('User not authenticated');
@@ -519,8 +598,10 @@ export const getMyBookings = async (
             throw error;
         }
 
-        const pageNumber = parseInt(page as string, 10);
-        const limitNumber = parseInt(limit as string, 10);
+        const {status, date, page = '1', limit = '10'} = req.query;
+
+        const pageNumber = Math.max(parseInt(page as string, 10), 1);
+        const limitNumber = Math.max(parseInt(limit as string, 10), 10);
         const skip = (pageNumber - 1) * limitNumber;
 
         const filter: any = {patient: patientId};
@@ -535,6 +616,7 @@ export const getMyBookings = async (
                 filterDate.setHours(0, 0, 0, 0);
                 const nextDay = new Date(filterDate);
                 nextDay.setDate(nextDay.getDate() + 1);
+
                 filter.date = {
                     $gte: filterDate,
                     $lt: nextDay,
@@ -543,9 +625,12 @@ export const getMyBookings = async (
         }
 
         const bookings = await Booking.find(filter)
-            .populate('therapist', 'firstName lastName email profilePhotoUrl bio specializations')
+            .populate(
+                'therapist',
+                'firstName lastName email profilePhoto bio specializations'
+            )
             .populate('payment')
-            .sort({date: -1, time: -1})
+            .sort({date: -1})
             .skip(skip)
             .limit(limitNumber);
 
@@ -793,7 +878,7 @@ export const updateBooking = async (
 
         await booking.save();
 
-        await booking.populate('therapist', 'firstName lastName email profilePhotoUrl');
+        await booking.populate('therapist', 'firstName lastName email profilePhoto');
         await booking.populate('patient', 'firstName lastName email');
         await booking.populate('payment');
 
@@ -957,7 +1042,7 @@ export const rescheduleBooking = async (
 
         await booking.save();
 
-        await booking.populate('therapist', 'firstName lastName email profilePhotoUrl');
+        await booking.populate('therapist', 'firstName lastName email profilePhoto');
         await booking.populate('patient', 'firstName lastName email');
         await booking.populate('payment');
 
@@ -1049,7 +1134,7 @@ export const cancelBooking = async (
 
         await booking.save();
 
-        await booking.populate('therapist', 'firstName lastName email profilePhotoUrl');
+        await booking.populate('therapist', 'firstName lastName email profilePhoto');
         await booking.populate('patient', 'firstName lastName email');
         await booking.populate('payment');
 
@@ -1121,7 +1206,7 @@ export const deleteBooking = async (
     }
 };
 
-// Get bookings grouped by date for a therapist
+// Get bookings grouped by date for a specific therapist
 export const getBookingsGroupedByDate = async (
     req: Request,
     res: Response,
@@ -1154,7 +1239,7 @@ export const getBookingsGroupedByDate = async (
                 filter.status = status;
             }
         } else {
-            filter.status = {$in: ['pending', 'confirmed', 'rescheduled', 'completed']};
+            filter.status = {$in: ['pending', 'confirmed', 'rescheduled', 'no-show']};
         }
 
         if (startDate || endDate) {
@@ -1176,34 +1261,58 @@ export const getBookingsGroupedByDate = async (
         }
 
         const bookings = await Booking.find(filter)
-            .populate('patient', 'firstName lastName email')
-            .sort({date: 1, time: 1})
-            .lean();
+            .populate('patient', 'firstName lastName email profilePhoto')
+            .populate('therapist', 'firstName lastName email profilePhoto')
+            .populate('payment')
+            .sort({date: 1, time: 1});
 
         const bookingsByDateMap = new Map<string, any[]>();
 
-        bookings.forEach((booking) => {
-            const dateKey = booking.date.toISOString().split('T')[0];
+        bookings.forEach((booking: any) => {
+            const bookingDate = new Date(booking.date);
+            const dateKey = bookingDate.toISOString().split('T')[0];
 
             if (!bookingsByDateMap.has(dateKey)) {
                 bookingsByDateMap.set(dateKey, []);
             }
 
+            const bookingObj = booking.toObject ? booking.toObject() : booking;
+
             bookingsByDateMap.get(dateKey)!.push({
-                _id: booking._id,
-                time: booking.time,
-                duration: booking.duration,
-                status: booking.status,
-                patient: booking.patient,
-                createdAt: booking.createdAt,
+                _id: bookingObj._id,
+                date: bookingObj.date,
+                time: bookingObj.time,
+                duration: bookingObj.duration,
+                status: bookingObj.status,
+                patient: bookingObj.patient,
+                therapist: bookingObj.therapist,
+                payment: bookingObj.payment,
+                notes: bookingObj.notes || null,
+                cancelledAt: bookingObj.cancelledAt || null,
+                cancellationReason: bookingObj.cancellationReason || null,
+                cancelledBy: bookingObj.cancelledBy || null,
+                reminderSent: bookingObj.reminderSent || false,
+                reminderSentAt: bookingObj.reminderSentAt || null,
+                createdAt: bookingObj.createdAt,
+                updatedAt: bookingObj.updatedAt,
             });
         });
 
-        const bookingsByDate = Array.from(bookingsByDateMap.entries()).map(([date, bookings]) => ({
-            date,
-            bookingCount: bookings.length,
-            bookings,
-        }));
+        const bookingsByDate = Array.from(bookingsByDateMap.entries())
+            .map(([date, bookings]) => ({
+                date,
+                bookingCount: bookings.length,
+                bookings: bookings.sort((a, b) => {
+                    const timeA = a.time.split(':').map(Number);
+                    const timeB = b.time.split(':').map(Number);
+                    const minutesA = timeA[0] * 60 + timeA[1];
+                    const minutesB = timeB[0] * 60 + timeB[1];
+                    return minutesA - minutesB;
+                }),
+            }))
+            .sort((a, b) => {
+                return new Date(b.date).getTime() - new Date(a.date).getTime();
+            });
 
         const totalBookings = bookings.length;
 
@@ -1215,10 +1324,10 @@ export const getBookingsGroupedByDate = async (
                 totalBookings,
                 totalDates: bookingsByDate.length,
                 bookingsByDate,
+                fetchedAt: new Date().toISOString(),
             },
         });
     } catch (error) {
         next(error);
     }
 };
-

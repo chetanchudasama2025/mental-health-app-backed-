@@ -1,5 +1,14 @@
 import mongoose, {Document, model, Schema} from "mongoose";
 
+export interface IAddress {
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+}
+
 export interface IPayment extends Document {
     user: mongoose.Types.ObjectId;
     amount: number;
@@ -11,6 +20,7 @@ export interface IPayment extends Document {
     paymentMethod?: string;
     cardHolderName?: string;
     description?: string;
+    address?: IAddress;
     metadata?: any;
     deletedAt?: Date | null;
     createdAt: Date;
@@ -62,6 +72,32 @@ const PaymentSchema = new Schema<IPayment>(
             type: String,
             trim: true,
             default: null,
+        },
+        address: {
+            line1: {
+                type: String,
+                trim: true,
+            },
+            line2: {
+                type: String,
+                trim: true,
+            },
+            city: {
+                type: String,
+                trim: true,
+            },
+            state: {
+                type: String,
+                trim: true,
+            },
+            postalCode: {
+                type: String,
+                trim: true,
+            },
+            country: {
+                type: String,
+                trim: true,
+            },
         },
         metadata: {
             type: Object,

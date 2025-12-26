@@ -433,42 +433,6 @@ export const deleteUser = async (
     }
 };
 
-// Delete current user (self-deletion)
-export const deleteCurrentUser = async (
-    req: AuthRequest,
-    res: Response,
-    next: NextFunction
-): Promise<void> => {
-    try {
-        const userId = req.user!._id;
-        const {reason} = req.body;
-
-        const user = await User.findById(userId);
-
-        if (!user || user.deletedAt) {
-            const error: CustomError = new Error('User not found');
-            error.statusCode = 404;
-            throw error;
-        }
-
-        // Soft delete
-        user.deletedAt = new Date();
-        if (reason) {
-            user.accountDeletionReason = reason;
-        }
-        await user.save();
-
-        res.status(200).json({
-            success: true,
-            message: 'Your account has been deleted successfully',
-            data: {
-                userId: user._id,
-            },
-        });
-    } catch (error) {
-        next(error);
-    }
-};
 
 // Set password for a user (admin only, only if password is null)
 export const setUserPassword = async (
@@ -622,3 +586,47 @@ export const getUserStatus = async (
         next(error);
     }
 };
+
+// Delete current authenticated user's account (soft delete with password confirmation & reason)
+export const deleteCurrentUser = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+) => {
+    try {
+        const userId = req.user?._id;
+        const {reason, password} = req.body;
+
+        if (!userId) throw {statusCode: 401, message: "User not authenticated"};
+        if (!password) throw {statusCode: 400, message: "Password is required"};
+
+        const user = await User.findOne({_id: userId, deletedAt: null});
+        if (!user) throw {statusCode: 404, message: "User not found"};
+
+        if (!user.password) throw {statusCode: 400, message: "Account has no password set"};
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) throw {statusCode: 401, message: "Invalid password"};
+
+        if (user.role === "therapist") {
+            const result = await Therapist.findByIdAndUpdate(
+                user.therapist,
+                {deletedAt: new Date()}
+            );
+
+            if (!result) console.warn("Therapist not found or already deleted");
+        }
+
+        await User.findByIdAndUpdate(userId, {
+            deletedAt: new Date(),
+            accountDeletionReason: reason || null,
+            $inc: {tokenVersion: 1}
+        });
+
+        res.status(200).json({success: true, message: "Your account has been deleted successfully"});
+
+    } catch (error: any) {
+        next({statusCode: error.statusCode || 500, message: error.message});
+    }
+};
+
