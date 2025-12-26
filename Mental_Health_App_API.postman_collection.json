@@ -1,1606 +1,3300 @@
 {
-	"info": {
-		"_postman_id": "mental-health-app-api",
-		"name": "Mental Health App API",
-		"description": "API collection for Mental Health Application Backend",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-	},
-	"item": [
-		{
-			"name": "Health Check",
-			"item": [
-				{
-					"name": "Health Check",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/health",
-							"host": ["{{baseUrl}}"],
-							"path": ["health"]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Authentication",
-			"item": [
-				{
-					"name": "Register",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"if (pm.response.code === 201) {",
-									"    const response = pm.response.json();",
-									"    if (response.data && response.data.token) {",
-									"        pm.environment.set('authToken', response.data.token);",
-									"        pm.environment.set('userId', response.data.user._id);",
-									"        if (response.data.refreshToken) {",
-									"            pm.environment.set('refreshToken', response.data.refreshToken);",
-									"        }",
-									"    }",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"phone\": {\n    \"countryCode\": \"+1\",\n    \"number\": \"1234567890\",\n    \"verified\": false\n  },\n  \"dateOfBirth\": \"1990-01-15\",\n  \"gender\": \"male\",\n  \"country\": \"USA\",\n  \"timezone\": \"America/New_York\",\n  \"password\": \"<encrypted-password>\",\n  \"role\": \"patient\",\n  \"emailVerified\": false\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/auth/register",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "register"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Login",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"if (pm.response.code === 200) {",
-									"    const response = pm.response.json();",
-									"    if (response.data && response.data.token) {",
-									"        pm.environment.set('authToken', response.data.token);",
-									"        pm.environment.set('userId', response.data.user._id);",
-									"        if (response.data.refreshToken) {",
-									"            pm.environment.set('refreshToken', response.data.refreshToken);",
-									"        }",
-									"    }",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"<encrypted-password>\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/auth/login",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "login"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Refresh Token",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"if (pm.response.code === 200) {",
-									"    const response = pm.response.json();",
-									"    if (response.data && response.data.token) {",
-									"        pm.environment.set('authToken', response.data.token);",
-									"        if (response.data.refreshToken) {",
-									"            pm.environment.set('refreshToken', response.data.refreshToken);",
-									"        }",
-									"    }",
-									"}"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/auth/refresh-token",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "refresh-token"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Current User",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/auth/me",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "me"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Forgot Password",
-					"request": {
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"email\": \"john.doe@example.com\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/auth/forgot-password",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "forgot-password"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Reset Password",
-					"request": {
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"token\": \"reset-token\",\n  \"newPassword\": \"<encrypted-new-password>\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/auth/reset-password",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "reset-password"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Change Password",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"oldPassword\": \"<encrypted-old-password>\",\n  \"newPassword\": \"<encrypted-new-password>\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/auth/change-password",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "change-password"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Add Password",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"password\": \"<encrypted-password>\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/auth/add-password",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "add-password"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Send Email Verification",
-					"request": {
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"email\": \"john.doe@example.com\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/auth/send-verification-email",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "send-verification-email"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Verify Email",
-					"request": {
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"token\": \"123456\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/auth/verify-email",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "verify-email"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Resend Email Verification",
-					"request": {
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"email\": \"john.doe@example.com\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/auth/resend-verification-email",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "resend-verification-email"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Send Phone Verification",
-					"request": {
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"phone\": {\n    \"countryCode\": \"+1\",\n    \"number\": \"1234567890\"\n  }\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/auth/send-verification-phone",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "send-verification-phone"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Verify Phone",
-					"request": {
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"phone\": {\n    \"countryCode\": \"+1\",\n    \"number\": \"1234567890\"\n  },\n  \"token\": \"123456\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/auth/verify-phone",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "verify-phone"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Resend Phone Verification",
-					"request": {
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"phone\": {\n    \"countryCode\": \"+1\",\n    \"number\": \"1234567890\"\n  }\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/auth/resend-verification-phone",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "resend-verification-phone"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Google OAuth",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/auth/google",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "google"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Google OAuth Callback",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/auth/google/callback?code=<auth-code>",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "auth", "google", "callback"],
-							"query": [{"key": "code", "value": "<auth-code>"}]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Users",
-			"item": [
-				{
-					"name": "Create User",
-					"request": {
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "multipart/form-data"}],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{"key": "firstName", "value": "Jane", "type": "text"},
-								{"key": "lastName", "value": "Smith", "type": "text"},
-								{"key": "email", "value": "jane.smith@example.com", "type": "text"},
-								{"key": "profilePhoto", "type": "file", "src": []}
-							]
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/users",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "users"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Current User",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/users/me",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "users", "me"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Delete Current User",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/users/me",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "users", "me"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get All Users",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/users",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "users"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get User by ID",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/users/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "users", ":id"],
-							"variable": [{"key": "id", "value": "{{userId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update User",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "PUT",
-						"header": [{"key": "Content-Type", "value": "multipart/form-data"}],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{"key": "firstName", "value": "Jane", "type": "text"},
-								{"key": "lastName", "value": "Smith Updated", "type": "text"},
-								{"key": "profilePhoto", "type": "file", "src": []}
-							]
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/users/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "users", ":id"],
-							"variable": [{"key": "id", "value": "{{userId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Delete User",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminToken}}", "type": "string"}]},
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/users/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "users", ":id"],
-							"variable": [{"key": "id", "value": "{{userId}}"}]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Therapists",
-			"item": [
-				{
-					"name": "Create Therapist",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{therapistToken}}", "type": "string"}]},
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "multipart/form-data"}],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{"key": "userId", "value": "{{userId}}", "type": "text"},
-								{"key": "specialization", "value": "[\"Anxiety\", \"Depression\"]", "type": "text"},
-								{"key": "profilePhoto", "type": "file", "src": []},
-								{"key": "videoIntro", "type": "file", "src": []},
-								{"key": "educationPhotos", "type": "file", "src": []},
-								{"key": "certificationPhotos", "type": "file", "src": []}
-							]
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/therapists",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "therapists"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get All Therapists",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/therapists",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "therapists"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Approved Therapists",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/therapists/approved",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "therapists", "approved"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Therapist by ID",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/therapists/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "therapists", ":id"],
-							"variable": [{"key": "id", "value": "{{therapistId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Therapist by User ID",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/therapists/user/:userId",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "therapists", "user", ":userId"],
-							"variable": [{"key": "userId", "value": "{{userId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Therapist",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{therapistToken}}", "type": "string"}]},
-						"method": "PUT",
-						"header": [{"key": "Content-Type", "value": "multipart/form-data"}],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{"key": "specialization", "value": "[\"Anxiety\", \"Depression\", \"PTSD\"]", "type": "text"},
-								{"key": "profilePhoto", "type": "file", "src": []}
-							]
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/therapists/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "therapists", ":id"],
-							"variable": [{"key": "id", "value": "{{therapistId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Therapist Status",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminToken}}", "type": "string"}]},
-						"method": "PATCH",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"status\": \"approved\",\n  \"reviewNotes\": \"All documents verified\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/therapists/:id/status",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "therapists", ":id", "status"],
-							"variable": [{"key": "id", "value": "{{therapistId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Delete Therapist",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminToken}}", "type": "string"}]},
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/therapists/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "therapists", ":id"],
-							"variable": [{"key": "id", "value": "{{therapistId}}"}]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Availabilities",
-			"item": [
-				{
-					"name": "Create Availability",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{therapistToken}}", "type": "string"}]},
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"therapistId\": \"{{therapistId}}\",\n  \"date\": \"2025-12-15\",\n  \"timeSlots\": [\n    {\n      \"startTime\": \"09:00\",\n      \"endTime\": \"10:00\",\n      \"isAvailable\": true\n    }\n  ]\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/availabilities",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "availabilities"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get All Availabilities",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/availabilities",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "availabilities"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Availability by ID",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/availabilities/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "availabilities", ":id"],
-							"variable": [{"key": "id", "value": "{{availabilityId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Availability by Therapist ID",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/availabilities/therapist/:therapistId",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "availabilities", "therapist", ":therapistId"],
-							"variable": [{"key": "therapistId", "value": "{{therapistId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Availability",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{therapistToken}}", "type": "string"}]},
-						"method": "PUT",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"timeSlots\": [\n    {\n      \"startTime\": \"09:00\",\n      \"endTime\": \"10:00\",\n      \"isAvailable\": false\n    }\n  ]\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/availabilities/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "availabilities", ":id"],
-							"variable": [{"key": "id", "value": "{{availabilityId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Delete Availability",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{therapistToken}}", "type": "string"}]},
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/availabilities/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "availabilities", ":id"],
-							"variable": [{"key": "id", "value": "{{availabilityId}}"}]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Bookings",
-			"item": [
-				{
-					"name": "Process Payment and Create Booking",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"therapistId\": \"{{therapistId}}\",\n  \"sessionDate\": \"2025-12-15\",\n  \"startTime\": \"09:00\",\n  \"endTime\": \"10:00\",\n  \"sessionType\": \"video\",\n  \"paymentMethod\": \"razorpay\",\n  \"amount\": 1000\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/bookings/process-payment-and-create-booking",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "bookings", "process-payment-and-create-booking"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Create Booking",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"therapistId\": \"{{therapistId}}\",\n  \"patientId\": \"{{userId}}\",\n  \"sessionDate\": \"2025-12-15\",\n  \"startTime\": \"09:00\",\n  \"endTime\": \"10:00\",\n  \"sessionType\": \"video\",\n  \"status\": \"scheduled\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/bookings",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "bookings"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get All Bookings",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/bookings",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "bookings"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get My Bookings",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/bookings/my-bookings",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "bookings", "my-bookings"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Bookings by Therapist",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/bookings/therapist/:therapistId",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "bookings", "therapist", ":therapistId"],
-							"variable": [{"key": "therapistId", "value": "{{therapistId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Booking by ID",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/bookings/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "bookings", ":id"],
-							"variable": [{"key": "id", "value": "{{bookingId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Booking",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "PUT",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"sessionDate\": \"2025-12-16\",\n  \"startTime\": \"10:00\",\n  \"endTime\": \"11:00\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/bookings/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "bookings", ":id"],
-							"variable": [{"key": "id", "value": "{{bookingId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Cancel Booking",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "PATCH",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"cancellationReason\": \"Schedule conflict\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/bookings/:id/cancel",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "bookings", ":id", "cancel"],
-							"variable": [{"key": "id", "value": "{{bookingId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Delete Booking",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminToken}}", "type": "string"}]},
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/bookings/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "bookings", ":id"],
-							"variable": [{"key": "id", "value": "{{bookingId}}"}]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Payments",
-			"item": [
-				{
-					"name": "Create Payment",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{patientToken}}", "type": "string"}]},
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"userId\": \"{{userId}}\",\n  \"bookingId\": \"{{bookingId}}\",\n  \"amount\": 1000,\n  \"paymentMethod\": \"razorpay\",\n  \"currency\": \"INR\",\n  \"description\": \"Therapy session payment\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/payments",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "payments"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get All Payments",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/payments",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "payments"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get My Payments",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/payments/me",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "payments", "me"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Payments by User ID",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/payments/user/:userId",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "payments", "user", ":userId"],
-							"variable": [{"key": "userId", "value": "{{userId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Payment by ID",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/payments/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "payments", ":id"],
-							"variable": [{"key": "id", "value": "{{paymentId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Payment",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "PUT",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"status\": \"completed\",\n  \"transactionId\": \"txn_123456\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/payments/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "payments", ":id"],
-							"variable": [{"key": "id", "value": "{{paymentId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Payment (PATCH)",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "PATCH",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"status\": \"failed\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/payments/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "payments", ":id"],
-							"variable": [{"key": "id", "value": "{{paymentId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Delete Payment",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminToken}}", "type": "string"}]},
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/payments/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "payments", ":id"],
-							"variable": [{"key": "id", "value": "{{paymentId}}"}]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Conversations",
-			"item": [
-				{
-					"name": "Get or Create Conversation",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"participantId\": \"{{therapistId}}\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/conversations",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "conversations"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get User Conversations",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/conversations",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "conversations"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Conversation by ID",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/conversations/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "conversations", ":id"],
-							"variable": [{"key": "id", "value": "{{conversationId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Delete Conversation",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/conversations/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "conversations", ":id"],
-							"variable": [{"key": "id", "value": "{{conversationId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Conversation Messages",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/conversations/:id/messages",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "conversations", ":id", "messages"],
-							"variable": [{"key": "id", "value": "{{conversationId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Send Message",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"content\": \"Hello, I have a question about my appointment.\",\n  \"messageType\": \"text\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/conversations/:id/messages",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "conversations", ":id", "messages"],
-							"variable": [{"key": "id", "value": "{{conversationId}}"}]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Messages",
-			"item": [
-				{
-					"name": "Mark Messages as Read",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "PUT",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"messageIds\": [\"{{messageId1}}\", \"{{messageId2}}\"]\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/messages/read",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "messages", "read"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Delete Message",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/messages/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "messages", ":id"],
-							"variable": [{"key": "id", "value": "{{messageId}}"}]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Notifications",
-			"item": [
-				{
-					"name": "Create Notification",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminToken}}", "type": "string"}]},
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"userId\": \"{{userId}}\",\n  \"title\": \"New Update\",\n  \"message\": \"Your appointment has been confirmed\",\n  \"type\": \"booking\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/notifications",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "notifications"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get All Notifications",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/notifications",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "notifications"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Unread Notification Count",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/notifications/unread/count",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "notifications", "unread", "count"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Notification by ID",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/notifications/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "notifications", ":id"],
-							"variable": [{"key": "id", "value": "{{notificationId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Notification",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "PUT",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"isRead\": true\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/notifications/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "notifications", ":id"],
-							"variable": [{"key": "id", "value": "{{notificationId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Mark Notification as Read",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "PATCH",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/notifications/:id/read",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "notifications", ":id", "read"],
-							"variable": [{"key": "id", "value": "{{notificationId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Mark All Notifications as Read",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "PATCH",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/notifications/read/all",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "notifications", "read", "all"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Delete Notification",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/notifications/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "notifications", ":id"],
-							"variable": [{"key": "id", "value": "{{notificationId}}"}]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Support Tickets",
-			"item": [
-				{
-					"name": "Create Support Ticket",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "multipart/form-data"}],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{"key": "subject", "value": "Issue with booking", "type": "text"},
-								{"key": "description", "value": "I cannot see my booking", "type": "text"},
-								{"key": "category", "value": "booking", "type": "text"},
-								{"key": "priority", "value": "high", "type": "text"},
-								{"key": "attachments", "type": "file", "src": []}
-							]
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/support-tickets",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "support-tickets"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get All Support Tickets",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/support-tickets",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "support-tickets"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Support Ticket by ID",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/support-tickets/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "support-tickets", ":id"],
-							"variable": [{"key": "id", "value": "{{ticketId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Support Ticket",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "PUT",
-						"header": [{"key": "Content-Type", "value": "multipart/form-data"}],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{"key": "status", "value": "in_progress", "type": "text"},
-								{"key": "response", "value": "We are looking into your issue", "type": "text"},
-								{"key": "attachments", "type": "file", "src": []}
-							]
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/support-tickets/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "support-tickets", ":id"],
-							"variable": [{"key": "id", "value": "{{ticketId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Delete Support Ticket",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminToken}}", "type": "string"}]},
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/support-tickets/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "support-tickets", ":id"],
-							"variable": [{"key": "id", "value": "{{ticketId}}"}]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Reviews",
-			"item": [
-				{
-					"name": "Create Review",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "multipart/form-data"}],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{"key": "therapistId", "value": "{{therapistId}}", "type": "text"},
-								{"key": "rating", "value": "5", "type": "text"},
-								{"key": "comment", "value": "Excellent therapist, very helpful!", "type": "text"},
-								{"key": "attachments", "type": "file", "src": []}
-							]
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/reviews",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "reviews"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get All Reviews",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/reviews",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "reviews"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Reviews by Therapist",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/reviews/therapist/:therapistId",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "reviews", "therapist", ":therapistId"],
-							"variable": [{"key": "therapistId", "value": "{{therapistId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get My Reviews",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/reviews/me",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "reviews", "me"]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Get Review by ID",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/reviews/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "reviews", ":id"],
-							"variable": [{"key": "id", "value": "{{reviewId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Update Review",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "PUT",
-						"header": [{"key": "Content-Type", "value": "multipart/form-data"}],
-						"body": {
-							"mode": "formdata",
-							"formdata": [
-								{"key": "rating", "value": "4", "type": "text"},
-								{"key": "comment", "value": "Updated review comment", "type": "text"},
-								{"key": "attachments", "type": "file", "src": []}
-							]
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/reviews/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "reviews", ":id"],
-							"variable": [{"key": "id", "value": "{{reviewId}}"}]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Delete Review",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{authToken}}", "type": "string"}]},
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/reviews/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "reviews", ":id"],
-							"variable": [{"key": "id", "value": "{{reviewId}}"}]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "Contact",
-			"item": [
-				{
-					"name": "Create Contact",
-					"request": {
-						"method": "POST",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"phone\": \"+1234567890\",\n  \"subject\": \"General Inquiry\",\n  \"message\": \"I would like to know more about your services.\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/contact",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "contact"]
-						},
-						"description": "Submit a contact form. Required fields: name, email, phone, message. Optional: subject (max 150 chars). Message max length: 2000 chars. Status defaults to 'new'."
-					},
-					"response": []
-				},
-				{
-					"name": "Get All Contacts",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/contact?page=1&limit=10&status=new&search=",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "contact"],
-							"query": [
-								{"key": "page", "value": "1", "description": "Page number"},
-								{"key": "limit", "value": "10", "description": "Items per page"},
-								{"key": "status", "value": "new", "description": "Filter by status: new, read, responded"},
-								{"key": "search", "value": "", "description": "Search in name, email, phone, or message"}
-							]
-						},
-						"description": "Get all contact form submissions with pagination and filters. Admin only. Returns contacts sorted by createdAt (newest first)."
-					},
-					"response": []
-				},
-				{
-					"name": "Get Contact by ID",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminToken}}", "type": "string"}]},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/contact/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "contact", ":id"],
-							"variable": [{"key": "id", "value": "{{contactId}}"}]
-						},
-						"description": "Get a specific contact form submission by ID. Admin only."
-					},
-					"response": []
-				},
-				{
-					"name": "Update Contact",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminToken}}", "type": "string"}]},
-						"method": "PUT",
-						"header": [{"key": "Content-Type", "value": "application/json"}],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"status\": \"read\"\n}"
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/contact/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "contact", ":id"],
-							"variable": [{"key": "id", "value": "{{contactId}}"}]
-						},
-						"description": "Update contact status. Allowed values: 'new', 'read', 'responded'"
-					},
-					"response": []
-				},
-				{
-					"name": "Delete Contact",
-					"request": {
-						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{adminToken}}", "type": "string"}]},
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/contact/:id",
-							"host": ["{{baseUrl}}"],
-							"path": ["api", "contact", ":id"],
-							"variable": [{"key": "id", "value": "{{contactId}}"}]
-						},
-						"description": "Soft delete a contact form submission. Admin only. Sets deletedAt timestamp."
-					},
-					"response": []
-				}
-			]
-		}
-	],
-	"variable": [
-		{"key": "baseUrl", "value": "http://localhost:3000", "type": "string"},
-		{"key": "authToken", "value": "", "type": "string"},
-		{"key": "adminToken", "value": "", "type": "string"},
-		{"key": "therapistToken", "value": "", "type": "string"},
-		{"key": "patientToken", "value": "", "type": "string"},
-		{"key": "refreshToken", "value": "", "type": "string"},
-		{"key": "userId", "value": "", "type": "string"},
-		{"key": "therapistId", "value": "", "type": "string"},
-		{"key": "bookingId", "value": "", "type": "string"},
-		{"key": "paymentId", "value": "", "type": "string"},
-		{"key": "conversationId", "value": "", "type": "string"},
-		{"key": "messageId", "value": "", "type": "string"},
-		{"key": "messageId1", "value": "", "type": "string"},
-		{"key": "messageId2", "value": "", "type": "string"},
-		{"key": "notificationId", "value": "", "type": "string"},
-		{"key": "ticketId", "value": "", "type": "string"},
-		{"key": "reviewId", "value": "", "type": "string"},
-		{"key": "contactId", "value": "", "type": "string"},
-		{"key": "availabilityId", "value": "", "type": "string"}
-	]
+  "info": {
+    "_postman_id": "mental-health-app-api",
+    "name": "Mental Health App API",
+    "description": "Complete API collection for Mental Health Application Backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"phone\": {\n    \"countryCode\": \"+1\",\n    \"number\": \"1234567890\"\n  },\n  \"dateOfBirth\": \"1990-01-01\",\n  \"gender\": \"male\",\n  \"country\": \"USA\",\n  \"timezone\": \"America/New_York\",\n  \"password\": \"password123\",\n  \"role\": \"patient\",\n  \"privacyPolicyAccepted\": true,\n  \"termsOfServiceAccepted\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.data && jsonData.data.token) {",
+                  "        pm.environment.set('authToken', jsonData.data.token);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"password123\",\n  \"isRemember\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/refresh-token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh-token"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "forgot-password"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"reset-token-from-email\",\n  \"password\": \"newPassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "reset-password"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"oldPassword\": \"oldPassword123\",\n  \"newPassword\": \"newPassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/change-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "change-password"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/add-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "add-password"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Send Verification Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/send-verification-email",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "send-verification-email"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"otp\": \"123456\",\n  \"email\": \"john.doe@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify-email",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "verify-email"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Resend Verification Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.doe@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/resend-verification-email",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "resend-verification-email"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Send Verification Phone",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": {\n    \"countryCode\": \"+1\",\n    \"number\": \"1234567890\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/send-verification-phone",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "send-verification-phone"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verify Phone",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"otp\": \"123456\",\n  \"phone\": {\n    \"countryCode\": \"+1\",\n    \"number\": \"1234567890\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify-phone",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "verify-phone"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Resend Verification Phone",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": {\n    \"countryCode\": \"+1\",\n    \"number\": \"1234567890\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/resend-verification-phone",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "resend-verification-phone"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Google Auth",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/google",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "google"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Google Callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/google/callback?code=CODE_FROM_GOOGLE",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "google",
+                "callback"
+              ],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "CODE_FROM_GOOGLE"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "multipart/form-data"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "firstName",
+                  "value": "Jane",
+                  "type": "text"
+                },
+                {
+                  "key": "lastName",
+                  "value": "Smith",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "jane.smith@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "{\"countryCode\":\"+1\",\"number\":\"9876543210\"}",
+                  "type": "text"
+                },
+                {
+                  "key": "dateOfBirth",
+                  "value": "1995-05-15",
+                  "type": "text"
+                },
+                {
+                  "key": "gender",
+                  "value": "female",
+                  "type": "text"
+                },
+                {
+                  "key": "country",
+                  "value": "USA",
+                  "type": "text"
+                },
+                {
+                  "key": "timezone",
+                  "value": "America/Los_Angeles",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "password123",
+                  "type": "text"
+                },
+                {
+                  "key": "role",
+                  "value": "patient",
+                  "type": "text"
+                },
+                {
+                  "key": "privacyPolicyAccepted",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "termsOfServiceAccepted",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "profilePhoto",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "me"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Accept Terms and Privacy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"privacyPolicyAccepted\": true,\n  \"termsOfServiceAccepted\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me/accept-terms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "me",
+                "accept-terms"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Current User",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"No longer needed\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "me"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Users (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get User By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "USER_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "firstName",
+                  "value": "Updated",
+                  "type": "text"
+                },
+                {
+                  "key": "lastName",
+                  "value": "Name",
+                  "type": "text"
+                },
+                {
+                  "key": "profilePhoto",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "USER_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete User (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "USER_ID"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Therapists",
+      "item": [
+        {
+          "name": "Create Therapist",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "userId",
+                  "value": "USER_ID",
+                  "type": "text"
+                },
+                {
+                  "key": "firstName",
+                  "value": "Dr. Sarah",
+                  "type": "text"
+                },
+                {
+                  "key": "lastName",
+                  "value": "Johnson",
+                  "type": "text"
+                },
+                {
+                  "key": "preferredName",
+                  "value": "Sarah",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "sarah.johnson@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "{\"countryCode\":\"+1\",\"number\":\"5551234567\"}",
+                  "type": "text"
+                },
+                {
+                  "key": "dateOfBirth",
+                  "value": "1985-03-20",
+                  "type": "text"
+                },
+                {
+                  "key": "gender",
+                  "value": "female",
+                  "type": "text"
+                },
+                {
+                  "key": "city",
+                  "value": "New York",
+                  "type": "text"
+                },
+                {
+                  "key": "country",
+                  "value": "USA",
+                  "type": "text"
+                },
+                {
+                  "key": "timezone",
+                  "value": "America/New_York",
+                  "type": "text"
+                },
+                {
+                  "key": "bio",
+                  "value": "Licensed therapist with 10 years of experience",
+                  "type": "text"
+                },
+                {
+                  "key": "education",
+                  "value": "[{\"degree\":\"PhD\",\"institution\":\"University\",\"year\":\"2010\"}]",
+                  "type": "text"
+                },
+                {
+                  "key": "certifications",
+                  "value": "[{\"name\":\"Licensed Therapist\",\"issuer\":\"State Board\",\"year\":\"2010\"}]",
+                  "type": "text"
+                },
+                {
+                  "key": "experience",
+                  "value": "[{\"title\":\"Senior Therapist\",\"organization\":\"Clinic\",\"startDate\":\"2010-01-01\",\"endDate\":\"2020-01-01\"}]",
+                  "type": "text"
+                },
+                {
+                  "key": "specializations",
+                  "value": "[\"Anxiety\",\"Depression\"]",
+                  "type": "text"
+                },
+                {
+                  "key": "languages",
+                  "value": "[\"English\",\"Spanish\"]",
+                  "type": "text"
+                },
+                {
+                  "key": "profilePhoto",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "videoIntro",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "educationPhotos",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "certificationPhotos",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "experiencePhotos",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/therapists",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "therapists"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Therapists",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/therapists",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "therapists"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Approved Therapists",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/therapists/approved",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "therapists",
+                "approved"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Therapist By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/therapists/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "therapists",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "THERAPIST_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Therapist By User ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/therapists/user/:userId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "therapists",
+                "user",
+                ":userId"
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "USER_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Therapist",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "bio",
+                  "value": "Updated bio",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/therapists/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "therapists",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "THERAPIST_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Therapist Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"approved\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/therapists/:id/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "therapists",
+                ":id",
+                "status"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "THERAPIST_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Therapist",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/therapists/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "therapists",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "THERAPIST_ID"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Availability",
+      "item": [
+        {
+          "name": "Create Availability",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"therapistId\": \"THERAPIST_ID\",\n  \"timeZone\": \"America/New_York\",\n  \"bufferTime\": \"15\",\n  \"price\": 100,\n  \"sessionDuration\": 60,\n  \"serviceEnabled\": true,\n  \"availabilityCalendar\": [\n    {\n      \"day\": \"monday\",\n      \"slots\": [\n        {\"start\": \"09:00\", \"end\": \"17:00\"}\n      ]\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/availabilities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "availabilities"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Availabilities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/availabilities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "availabilities"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Availability By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/availabilities/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "availabilities",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "AVAILABILITY_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Availability By Therapist ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/availabilities/therapist/:therapistId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "availabilities",
+                "therapist",
+                ":therapistId"
+              ],
+              "variable": [
+                {
+                  "key": "therapistId",
+                  "value": "THERAPIST_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Availability",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 120,\n  \"sessionDuration\": 45\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/availabilities/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "availabilities",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "AVAILABILITY_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Availability",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/availabilities/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "availabilities",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "AVAILABILITY_ID"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "Process Payment and Create Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 100,\n  \"patientId\": \"PATIENT_ID\",\n  \"therapistId\": \"THERAPIST_ID\",\n  \"date\": \"2024-12-25\",\n  \"time\": \"10:00\",\n  \"duration\": 60,\n  \"paymentMethodId\": \"pm_1234567890\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/process-payment-and-create-booking",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "process-payment-and-create-booking"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"therapistId\": \"THERAPIST_ID\",\n  \"date\": \"2024-12-25\",\n  \"time\": \"10:00\",\n  \"duration\": 60,\n  \"payment\": \"PAYMENT_ID\",\n  \"notes\": \"Initial consultation\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Bookings (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/my-bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "my-bookings"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Past Therapists",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/past-therapists",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "past-therapists"
+              ]
+            },
+            "description": "Get a list of therapists from past bookings for the authenticated patient. Returns unique therapists with their last session information and total session count."
+          }
+        },
+        {
+          "name": "Get Past Therapists by Patient ID (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/patient/:patientId/past-therapists",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "patient",
+                ":patientId",
+                "past-therapists"
+              ],
+              "variable": [
+                {
+                  "key": "patientId",
+                  "value": "PATIENT_ID"
+                }
+              ]
+            },
+            "description": "Get past therapists for a specific patient. Admin only. Returns unique therapists with their last session information and total session count."
+          }
+        },
+        {
+          "name": "Get Bookings By Therapist",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/therapist/:therapistId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "therapist",
+                ":therapistId"
+              ],
+              "variable": [
+                {
+                  "key": "therapistId",
+                  "value": "THERAPIST_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Bookings Grouped By Date",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/therapist/:therapistId/grouped-by-date?startDate=2024-12-01&endDate=2024-12-31&status=confirmed",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                "therapist",
+                ":therapistId",
+                "grouped-by-date"
+              ],
+              "variable": [
+                {
+                  "key": "therapistId",
+                  "value": "THERAPIST_ID"
+                }
+              ],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2024-12-01",
+                  "description": "Optional: Start date (YYYY-MM-DD)"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-12-31",
+                  "description": "Optional: End date (YYYY-MM-DD)"
+                },
+                {
+                  "key": "status",
+                  "value": "confirmed",
+                  "description": "Optional: Filter by status (pending, confirmed, completed, cancelled, no-show, rescheduled)"
+                }
+              ]
+            },
+            "description": "Get bookings for a therapist grouped by date with booking counts. Returns how many slots are booked for each date. By default, only counts active bookings (excludes cancelled and no-show)."
+          }
+        },
+        {
+          "name": "Get Booking By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "BOOKING_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Booking",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2024-12-26\",\n  \"time\": \"11:00\",\n  \"duration\": 45,\n  \"status\": \"confirmed\",\n  \"notes\": \"Updated notes\",\n  \"cancellationReason\": \"Optional reason if cancelling\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "BOOKING_ID"
+                }
+              ]
+            },
+            "description": "Update booking details. Valid statuses: pending, confirmed, completed, cancelled, no-show, rescheduled. If status is set to cancelled, cancelledBy will be automatically set based on the user role."
+          }
+        },
+        {
+          "name": "Reschedule Booking",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2024-12-27\",\n  \"time\": \"14:00\",\n  \"duration\": 60\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/:id/reschedule",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                ":id",
+                "reschedule"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "BOOKING_ID"
+                }
+              ]
+            },
+            "description": "Reschedule a booking. Only the patient who made the booking can reschedule it. Duration is optional and defaults to the current booking duration. IMPORTANT: Rescheduling is only allowed if the booking is at least 24 hours away. Bookings less than 24 hours away cannot be rescheduled."
+          }
+        },
+        {
+          "name": "Cancel Booking",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cancellationReason\": \"Schedule conflict\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/:id/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                ":id",
+                "cancel"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "BOOKING_ID"
+                }
+              ]
+            },
+            "description": "Cancel a booking. Can be cancelled by the patient, therapist, or admin. The cancelledBy field will be automatically set based on who cancels it."
+          }
+        },
+        {
+          "name": "Delete Booking (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/bookings/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "bookings",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "BOOKING_ID"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Create Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 100,\n  \"currency\": \"usd\",\n  \"paymentIntentId\": \"pi_1234567890\",\n  \"clientSecret\": \"pi_1234567890_secret_xyz\",\n  \"status\": \"succeeded\",\n  \"receiptUrl\": \"https://pay.stripe.com/receipts/...\",\n  \"paymentMethod\": \"pm_1234567890\",\n  \"description\": \"Therapy session payment\",\n  \"metadata\": {}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Payments (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Payments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "me"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Payments By User ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/user/:userId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                "user",
+                ":userId"
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "USER_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Payment By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "PAYMENT_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Payment",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"refunded\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "PAYMENT_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Patch Payment",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"succeeded\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "PAYMENT_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Payment (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "payments",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "PAYMENT_ID"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reviews",
+      "item": [
+        {
+          "name": "Create Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "therapistId",
+                  "value": "THERAPIST_ID",
+                  "type": "text"
+                },
+                {
+                  "key": "rating",
+                  "value": "5",
+                  "type": "text"
+                },
+                {
+                  "key": "review",
+                  "value": "Excellent therapist, very helpful and understanding.",
+                  "type": "text"
+                },
+                {
+                  "key": "isAnonymous",
+                  "value": "false",
+                  "type": "text"
+                },
+                {
+                  "key": "sessionId",
+                  "value": "BOOKING_ID",
+                  "type": "text"
+                },
+                {
+                  "key": "remarks",
+                  "value": "Would highly recommend",
+                  "type": "text"
+                },
+                {
+                  "key": "attachments",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Reviews (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Reviews By Therapist",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/therapist/:therapistId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews",
+                "therapist",
+                ":therapistId"
+              ],
+              "variable": [
+                {
+                  "key": "therapistId",
+                  "value": "THERAPIST_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Reviews",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews",
+                "me"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Review By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "REVIEW_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Review",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "rating",
+                  "value": "4",
+                  "type": "text"
+                },
+                {
+                  "key": "review",
+                  "value": "Updated review text",
+                  "type": "text"
+                },
+                {
+                  "key": "attachments",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "REVIEW_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Review",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reviews/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reviews",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "REVIEW_ID"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Conversations",
+      "item": [
+        {
+          "name": "Get or Create Conversation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"participantId\": \"USER_ID\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/conversations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "conversations"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get User Conversations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/conversations?page=1&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "conversations"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Conversation By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/conversations/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "conversations",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "CONVERSATION_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Conversation Messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/conversations/:id/messages?page=1&limit=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "conversations",
+                ":id",
+                "messages"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "CONVERSATION_ID"
+                }
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Hello, how are you?\",\n  \"attachmentUrl\": \"https://example.com/file.pdf\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/conversations/:id/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "conversations",
+                ":id",
+                "messages"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "CONVERSATION_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Conversation",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/conversations/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "conversations",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "CONVERSATION_ID"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Messages",
+      "item": [
+        {
+          "name": "Mark Messages As Read",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"messageIds\": [\"MESSAGE_ID_1\", \"MESSAGE_ID_2\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/messages/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "messages",
+                "read"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Message",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/messages/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "messages",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "MESSAGE_ID"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "Create Notification (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"USER_ID\",\n  \"title\": \"New Session Booked\",\n  \"message\": \"Your session has been confirmed\",\n  \"type\": \"session_booked\",\n  \"icon\": \"calendar\",\n  \"metadata\": {}\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Unread Notification Count",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/unread/count",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "unread",
+                "count"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Notification By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "NOTIFICATION_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Notification",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Title\",\n  \"message\": \"Updated message\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "NOTIFICATION_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Notification As Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/:id/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                ":id",
+                "read"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "NOTIFICATION_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark All Notifications As Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/read/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "read",
+                "all"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Notification",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "NOTIFICATION_ID"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Support Tickets",
+      "item": [
+        {
+          "name": "Create Support Ticket",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "userId",
+                  "value": "USER_ID",
+                  "type": "text",
+                  "description": "Required: User ID (automatically set from auth token if authenticated)"
+                },
+                {
+                  "key": "email",
+                  "value": "user@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "phone",
+                  "value": "+1234567890",
+                  "type": "text"
+                },
+                {
+                  "key": "userType",
+                  "value": "patient",
+                  "type": "text",
+                  "description": "Must be 'patient' or 'therapist'"
+                },
+                {
+                  "key": "issueCategory",
+                  "value": "technical_support",
+                  "type": "text",
+                  "description": "Options: billing_refunds, technical_support, session_support, account_issues, platform_features, therapist_concerns, general_inquiry"
+                },
+                {
+                  "key": "subject",
+                  "value": "Unable to book session",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "I'm having trouble booking a session with my therapist.",
+                  "type": "text"
+                },
+                {
+                  "key": "priority",
+                  "value": "medium",
+                  "type": "text",
+                  "description": "Options: low, medium, high (default: low)"
+                },
+                {
+                  "key": "attachments",
+                  "type": "file",
+                  "src": [],
+                  "description": "Optional: File attachments (max 10 files)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/support-tickets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support-tickets"
+              ]
+            },
+            "description": "Create a new support ticket. userId is required (automatically extracted from auth token if authenticated, or can be provided in body). ticketNumber is auto-generated in format: TKT-YYYYMMDD-XXXXXX"
+          }
+        },
+        {
+          "name": "Get All Support Tickets (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/support-tickets?page=1&limit=10&search=&userType=&issueCategory=&status=&priority=&email=&ticketNumber=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support-tickets"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page (default: 10)"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Search in subject, description, email, or ticketNumber"
+                },
+                {
+                  "key": "userType",
+                  "value": "",
+                  "description": "Filter by userType: patient or therapist"
+                },
+                {
+                  "key": "issueCategory",
+                  "value": "",
+                  "description": "Filter by issue category"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "Filter by status: open, in_progress, resolved, closed"
+                },
+                {
+                  "key": "priority",
+                  "value": "",
+                  "description": "Filter by priority: low, medium, high"
+                },
+                {
+                  "key": "email",
+                  "value": "",
+                  "description": "Filter by email"
+                },
+                {
+                  "key": "ticketNumber",
+                  "value": "",
+                  "description": "Filter by ticket number"
+                }
+              ]
+            },
+            "description": "Get all support tickets with filtering and pagination. Search includes subject, description, email, and ticketNumber."
+          }
+        },
+        {
+          "name": "Get Support Ticket By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/support-tickets/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support-tickets",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "TICKET_ID"
+                }
+              ]
+            },
+            "description": "Get a support ticket by MongoDB ID"
+          }
+        },
+        {
+          "name": "Get Support Ticket By Ticket Number",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/support-tickets/ticket/:ticketNumber",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support-tickets",
+                "ticket",
+                ":ticketNumber"
+              ],
+              "variable": [
+                {
+                  "key": "ticketNumber",
+                  "value": "TKT-20241215-A3B2C1",
+                  "description": "Ticket number in format: TKT-YYYYMMDD-XXXXXX"
+                }
+              ]
+            },
+            "description": "Get a support ticket by ticket number. Useful for customer-facing lookups. Ticket number format: TKT-YYYYMMDD-XXXXXX"
+          }
+        },
+        {
+          "name": "Update Support Ticket",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "status",
+                  "value": "resolved",
+                  "type": "text"
+                },
+                {
+                  "key": "attachments",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/support-tickets/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support-tickets",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "TICKET_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Support Ticket (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/support-tickets/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "support-tickets",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "TICKET_ID"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contact",
+      "item": [
+        {
+          "name": "Create Contact",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"phone\": \"+1234567890\",\n  \"message\": \"I would like to know more about your services.\",\n  \"subject\": \"General Inquiry\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/contact",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contact"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Contacts (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/contact?page=1&limit=10&status=new&search=john",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contact"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "new"
+                },
+                {
+                  "key": "search",
+                  "value": "john"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Contact By ID (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/contact/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contact",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "CONTACT_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Contact Status (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"read\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/contact/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contact",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "CONTACT_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Contact (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/contact/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "contact",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "CONTACT_ID"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "App Config",
+      "item": [
+        {
+          "name": "Get App Config",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/app-config",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "app-config"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All App Configs (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/app-config/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "app-config",
+                "all"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create App Config (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"specializations\": [\"Anxiety\", \"Depression\", \"PTSD\"],\n  \"languages\": [\"English\", \"Spanish\", \"French\"],\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/app-config",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "app-config"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update App Config (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"specializations\": [\"Anxiety\", \"Depression\", \"PTSD\", \"Bipolar\"],\n  \"languages\": [\"English\", \"Spanish\", \"French\", \"German\"],\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/app-config/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "app-config",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "CONFIG_ID"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete App Config (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/app-config/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "app-config",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "CONFIG_ID"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    }
+  ]
 }
+

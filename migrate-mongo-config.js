@@ -6,8 +6,7 @@ const config = {
     mongodb: {
         url: mongoUrl,
         databaseName: process.env.DB_NAME || defaultDbName,
-        options: {
-        }
+        options: {}
     },
 
     migrationsDir: "migrations",

@@ -9,3 +9,4 @@ export * from './messageController';
 export * from './paymentController';
 export * from './contactController';
 export * from './reviewController';
+export * from './appConfigController';

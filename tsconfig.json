@@ -20,6 +20,7 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
+    "types": ["node"],
     "typeRoots": [
       "./node_modules/@types",
       "./types"
@@ -44,7 +45,9 @@
     "compilerOptions": {
       "module": "commonjs",
       "esModuleInterop": true,
-      "skipLibCheck": true
-    }
+      "skipLibCheck": true,
+      "strict": false
+    },
+    "files": true
   }
 }

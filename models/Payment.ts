@@ -9,6 +9,7 @@ export interface IPayment extends Document {
     status: "pending" | "succeeded" | "failed" | "refunded";
     receiptUrl?: string;
     paymentMethod?: string;
+    cardHolderName?: string;
     description?: string;
     metadata?: any;
     deletedAt?: Date | null;
@@ -22,6 +23,10 @@ const PaymentSchema = new Schema<IPayment>(
             type: Schema.Types.ObjectId,
             ref: "User",
             required: true,
+        },
+        cardHolderName: {
+            type: String,
+            default: null,
         },
         amount: {
             type: Number,

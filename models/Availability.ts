@@ -26,27 +26,27 @@ const DayAvailabilitySchema = new Schema<IDayAvailability>(
             enum: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
             required: true,
         },
-        isAvailable: { type: Boolean, default: false },
-        startTime: { type: String },
-        endTime: { type: String },
+        isAvailable: {type: Boolean, default: false},
+        startTime: {type: String},
+        endTime: {type: String},
     },
-    { _id: false }
+    {_id: false}
 );
 
 const AvailabilitySchema = new Schema<IAvailability>(
     {
-        therapistId: { type: Schema.Types.ObjectId, ref: "Therapist", required: true },
-        timeZone: { type: String, required: true },
-        bufferTime: { type: String, required: true },
-        price: { type: Number, required: true },
-        sessionDuration: { type: String, required: true },
-        serviceEnabled: { type: Boolean, default: false },
+        therapistId: {type: Schema.Types.ObjectId, ref: "Therapist", required: true},
+        timeZone: {type: String, required: true},
+        bufferTime: {type: String, required: true},
+        price: {type: Number, required: true},
+        sessionDuration: {type: String, required: true},
+        serviceEnabled: {type: Boolean, default: false},
         availabilityCalendar: {
             type: [DayAvailabilitySchema],
             default: [],
         },
     },
-    { timestamps: true }
+    {timestamps: true}
 );
 
 export default mongoose.model<IAvailability>("Availability", AvailabilitySchema);

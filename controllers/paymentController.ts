@@ -20,6 +20,7 @@ export const createPayment = async (
             status,
             receiptUrl,
             paymentMethod,
+            cardHolderName,
             description,
             metadata,
         } = req.body;
@@ -49,7 +50,7 @@ export const createPayment = async (
             throw error;
         }
 
-        const user = await User.findOne({ _id: userId, deletedAt: null });
+        const user = await User.findOne({_id: userId, deletedAt: null});
         if (!user) {
             const error: CustomError = new Error('User not found');
             error.statusCode = 404;
@@ -76,6 +77,7 @@ export const createPayment = async (
             status: status || 'pending',
             receiptUrl: receiptUrl || null,
             paymentMethod: paymentMethod || null,
+            cardHolderName: cardHolderName || null,
             description: description || null,
             metadata: metadata || {},
         });
@@ -116,7 +118,7 @@ export const getAllPayments = async (
         const limitNumber = parseInt(limit as string, 10);
         const skip = (pageNumber - 1) * limitNumber;
 
-        const filter: any = { deletedAt: null };
+        const filter: any = {deletedAt: null};
 
         if (userId) {
             if (!mongoose.Types.ObjectId.isValid(userId as string)) {
@@ -141,11 +143,11 @@ export const getAllPayments = async (
         }
 
         if (minAmount) {
-            filter.amount = { ...filter.amount, $gte: parseFloat(minAmount as string) };
+            filter.amount = {...filter.amount, $gte: parseFloat(minAmount as string)};
         }
 
         if (maxAmount) {
-            filter.amount = { ...filter.amount, $lte: parseFloat(maxAmount as string) };
+            filter.amount = {...filter.amount, $lte: parseFloat(maxAmount as string)};
         }
 
         if (startDate || endDate) {
@@ -167,7 +169,7 @@ export const getAllPayments = async (
 
         const payments = await Payment.find(filter)
             .populate('user', 'firstName lastName email')
-            .sort({ createdAt: -1 })
+            .sort({createdAt: -1})
             .skip(skip)
             .limit(limitNumber);
 
@@ -198,7 +200,7 @@ export const getPaymentById = async (
     next: NextFunction
 ): Promise<void> => {
     try {
-        const { id } = req.params;
+        const {id} = req.params;
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
             const error: CustomError = new Error('Invalid payment ID');
@@ -206,7 +208,7 @@ export const getPaymentById = async (
             throw error;
         }
 
-        const payment = await Payment.findOne({ _id: id, deletedAt: null })
+        const payment = await Payment.findOne({_id: id, deletedAt: null})
             .populate('user', 'firstName lastName email');
 
         if (!payment) {
@@ -254,7 +256,7 @@ export const getMyPayments = async (
         const limitNumber = parseInt(limit as string, 10);
         const skip = (pageNumber - 1) * limitNumber;
 
-        const filter: any = { user: userId, deletedAt: null };
+        const filter: any = {user: userId, deletedAt: null};
 
         if (status) {
             if (!['pending', 'succeeded', 'failed', 'refunded'].includes(status as string)) {
@@ -270,11 +272,11 @@ export const getMyPayments = async (
         }
 
         if (minAmount) {
-            filter.amount = { ...filter.amount, $gte: parseFloat(minAmount as string) };
+            filter.amount = {...filter.amount, $gte: parseFloat(minAmount as string)};
         }
 
         if (maxAmount) {
-            filter.amount = { ...filter.amount, $lte: parseFloat(maxAmount as string) };
+            filter.amount = {...filter.amount, $lte: parseFloat(maxAmount as string)};
         }
 
         if (startDate || endDate) {
@@ -296,7 +298,7 @@ export const getMyPayments = async (
 
         const payments = await Payment.find(filter)
             .populate('user', 'firstName lastName email')
-            .sort({ createdAt: -1 })
+            .sort({createdAt: -1})
             .skip(skip)
             .limit(limitNumber);
 
@@ -327,7 +329,7 @@ export const getPaymentsByUserId = async (
     next: NextFunction
 ): Promise<void> => {
     try {
-        const { userId } = req.params;
+        const {userId} = req.params;
         const {
             status,
             currency,
@@ -345,7 +347,7 @@ export const getPaymentsByUserId = async (
             throw error;
         }
 
-        const user = await User.findOne({ _id: userId, deletedAt: null });
+        const user = await User.findOne({_id: userId, deletedAt: null});
         if (!user) {
             const error: CustomError = new Error('User not found');
             error.statusCode = 404;
@@ -356,7 +358,7 @@ export const getPaymentsByUserId = async (
         const limitNumber = parseInt(limit as string, 10);
         const skip = (pageNumber - 1) * limitNumber;
 
-        const filter: any = { user: userId, deletedAt: null };
+        const filter: any = {user: userId, deletedAt: null};
 
         if (status) {
             if (!['pending', 'succeeded', 'failed', 'refunded'].includes(status as string)) {
@@ -372,11 +374,11 @@ export const getPaymentsByUserId = async (
         }
 
         if (minAmount) {
-            filter.amount = { ...filter.amount, $gte: parseFloat(minAmount as string) };
+            filter.amount = {...filter.amount, $gte: parseFloat(minAmount as string)};
         }
 
         if (maxAmount) {
-            filter.amount = { ...filter.amount, $lte: parseFloat(maxAmount as string) };
+            filter.amount = {...filter.amount, $lte: parseFloat(maxAmount as string)};
         }
 
         if (startDate || endDate) {
@@ -398,7 +400,7 @@ export const getPaymentsByUserId = async (
 
         const payments = await Payment.find(filter)
             .populate('user', 'firstName lastName email')
-            .sort({ createdAt: -1 })
+            .sort({createdAt: -1})
             .skip(skip)
             .limit(limitNumber);
 
@@ -429,11 +431,12 @@ export const updatePayment = async (
     next: NextFunction
 ): Promise<void> => {
     try {
-        const { id } = req.params;
+        const {id} = req.params;
         const {
             status,
             receiptUrl,
             paymentMethod,
+            cardHolderName,
             description,
             metadata,
         } = req.body;
@@ -444,7 +447,7 @@ export const updatePayment = async (
             throw error;
         }
 
-        const payment = await Payment.findOne({ _id: id, deletedAt: null });
+        const payment = await Payment.findOne({_id: id, deletedAt: null});
         if (!payment) {
             const error: CustomError = new Error('Payment not found');
             error.statusCode = 404;
@@ -458,7 +461,7 @@ export const updatePayment = async (
             throw error;
         }
 
-        const user = await User.findOne({ _id: userId, deletedAt: null });
+        const user = await User.findOne({_id: userId, deletedAt: null});
         if (!user) {
             const error: CustomError = new Error('User not found');
             error.statusCode = 404;
@@ -491,6 +494,10 @@ export const updatePayment = async (
             payment.paymentMethod = paymentMethod || null;
         }
 
+        if (cardHolderName !== undefined) {
+            payment.cardHolderName = cardHolderName || null;
+        }
+
         if (description !== undefined) {
             payment.description = description || null;
         }
@@ -519,7 +526,7 @@ export const deletePayment = async (
     next: NextFunction
 ): Promise<void> => {
     try {
-        const { id } = req.params;
+        const {id} = req.params;
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
             const error: CustomError = new Error('Invalid payment ID');
@@ -527,7 +534,7 @@ export const deletePayment = async (
             throw error;
         }
 
-        const payment = await Payment.findOne({ _id: id, deletedAt: null });
+        const payment = await Payment.findOne({_id: id, deletedAt: null});
         if (!payment) {
             const error: CustomError = new Error('Payment not found');
             error.statusCode = 404;
@@ -541,7 +548,7 @@ export const deletePayment = async (
             throw error;
         }
 
-        const user = await User.findOne({ _id: userId, deletedAt: null });
+        const user = await User.findOne({_id: userId, deletedAt: null});
         if (!user) {
             const error: CustomError = new Error('User not found');
             error.statusCode = 404;

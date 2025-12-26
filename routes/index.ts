@@ -10,6 +10,8 @@ import paymentRoutes from './paymentRoutes';
 import reviewRoutes from './reviewRoutes';
 import {conversationRouter, messageRouter} from './messageRoutes';
 import contactRoutes from "./contactRoutes";
+import appConfigRoutes from "./appConfigRoutes";
+import agoraRoutes from "./agoraRoutes";
 
 const router = Router();
 
@@ -25,6 +27,8 @@ router.use('/reviews', reviewRoutes);
 router.use('/conversations', conversationRouter);
 router.use('/messages', messageRouter);
 router.use("/contact", contactRoutes);
+router.use("/app-config", appConfigRoutes);
+router.use("/agora", agoraRoutes);
 
-export { router as routes };
+export {router as routes};
 

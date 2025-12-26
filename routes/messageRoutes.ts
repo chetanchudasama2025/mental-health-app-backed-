@@ -1,16 +1,18 @@
 import {Router} from 'express';
 import {
-  deleteConversation,
-  deleteMessage,
-  getConversationById,
-  getConversationMessages,
-  getOrCreateConversation,
-  getUserConversations,
-  markMessagesAsRead,
-  sendMessage,
+    deleteConversation,
+    deleteMessage,
+    getConversationById,
+    getConversationMessages,
+    getOrCreateConversation,
+    getUserConversations,
+    markMessagesAsRead,
+    sendMessage,
+    uploadChatFile,
 } from '../controllers/messageController';
 import {authenticate} from '../middleware/authMiddleware';
 import {checkPermission} from '../middleware/rbacMiddleware';
+import {upload} from '../middleware/uploadMiddleware';
 
 const conversationRouter = Router();
 const messageRouter = Router();
@@ -21,8 +23,10 @@ conversationRouter.get('/:id', authenticate, checkPermission('read', 'Conversati
 conversationRouter.delete('/:id', authenticate, checkPermission('delete', 'Conversation'), deleteConversation);
 conversationRouter.get('/:id/messages', authenticate, checkPermission('read', 'Message'), getConversationMessages);
 conversationRouter.post('/:id/messages', authenticate, checkPermission('create', 'Message'), sendMessage);
+messageRouter.post('/upload-file', authenticate, checkPermission('create', 'Message'), upload.single('file'), uploadChatFile);
+messageRouter.post('/upload-image', authenticate, checkPermission('create', 'Message'), upload.single('file'), uploadChatFile); // Backward compatibility
 messageRouter.put('/read', authenticate, checkPermission('update', 'Message'), markMessagesAsRead);
 messageRouter.delete('/:id', authenticate, checkPermission('delete', 'Message'), deleteMessage);
 
-export { conversationRouter, messageRouter };
+export {conversationRouter, messageRouter};
 export default conversationRouter;

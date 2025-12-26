@@ -12,4 +12,5 @@ export * from './Booking';
 export * from './Payment';
 export * from './Notification';
 export * from './ContactUs';
+export * from './AppConfig';
 

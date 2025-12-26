@@ -1,13 +1,13 @@
 import {Router} from 'express';
 import {
-  createNotification,
-  deleteNotification,
-  getAllNotifications,
-  getNotificationById,
-  getUnreadNotificationCount,
-  markAllNotificationsAsRead,
-  markNotificationAsRead,
-  updateNotification,
+    createNotification,
+    deleteNotification,
+    getAllNotifications,
+    getNotificationById,
+    getUnreadNotificationCount,
+    markAllNotificationsAsRead,
+    markNotificationAsRead,
+    updateNotification,
 } from '../controllers/notificationController';
 import {authenticate} from '../middleware/authMiddleware';
 import {checkPermission, requireRole} from '../middleware/rbacMiddleware';

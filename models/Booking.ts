@@ -5,12 +5,21 @@ export interface IBooking extends Document {
     patient: mongoose.Types.ObjectId;
     date: Date;
     time: string;
-    duration: number;
-    status: "pending" | "confirmed" | "completed" | "cancelled" | "no-show";
+    duration: 30 | 45 | 60;
+    status:
+        | "pending"
+        | "confirmed"
+        | "completed"
+        | "cancelled"
+        | "no-show"
+        | "rescheduled";
     payment: mongoose.Types.ObjectId;
     notes?: string;
     cancelledAt?: Date;
     cancellationReason?: string;
+    cancelledBy?: "patient" | "therapist" | "admin";
+    reminderSent?: boolean;
+    reminderSentAt?: Date;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -37,13 +46,21 @@ const BookingSchema = new Schema<IBooking>(
         },
         duration: {
             type: Number,
-            required: true,
             enum: [30, 45, 60],
+            required: true,
         },
         status: {
             type: String,
-            enum: ["pending", "confirmed", "completed", "cancelled", "no-show"],
+            enum: [
+                "pending",
+                "confirmed",
+                "completed",
+                "cancelled",
+                "no-show",
+                "rescheduled",
+            ],
             default: "pending",
+            index: true,
         },
         payment: {
             type: Schema.Types.ObjectId,
@@ -55,18 +72,26 @@ const BookingSchema = new Schema<IBooking>(
         },
         cancelledAt: Date,
         cancellationReason: String,
+        cancelledBy: {
+            type: String,
+            enum: ["patient", "therapist", "admin"],
+        },
+        reminderSent: {
+            type: Boolean,
+            default: false,
+        },
+        reminderSentAt: Date,
     },
-    { timestamps: true }
+    {timestamps: true}
 );
 
-BookingSchema.index({ patient: 1, date: 1 });
-BookingSchema.index({ status: 1 });
-
+BookingSchema.index({patient: 1, date: 1});
+BookingSchema.index({therapist: 1, date: 1});
 BookingSchema.index(
-    { therapist: 1, date: 1, time: 1 },
+    {therapist: 1, date: 1, time: 1},
     {
         partialFilterExpression: {
-            status: { $in: ["pending", "confirmed"] },
+            status: {$in: ["pending", "confirmed", "rescheduled"]},
         },
     }
 );

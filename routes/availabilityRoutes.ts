@@ -1,11 +1,11 @@
 import {Router} from 'express';
 import {
-  createAvailability,
-  deleteAvailability,
-  getAllAvailabilities,
-  getAvailabilityById,
-  getAvailabilityByTherapistId,
-  updateAvailability,
+    createAvailability,
+    deleteAvailability,
+    getAllAvailabilities,
+    getAvailabilityById,
+    getAvailabilityByTherapistId,
+    updateAvailability,
 } from '../controllers/availabilityController';
 import {authenticate} from '../middleware/authMiddleware';
 import {checkPermission, requireRole} from '../middleware/rbacMiddleware';

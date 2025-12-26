@@ -1,12 +1,12 @@
 import {Router} from 'express';
 import {
-  createPayment,
-  deletePayment,
-  getAllPayments,
-  getMyPayments,
-  getPaymentById,
-  getPaymentsByUserId,
-  updatePayment,
+    createPayment,
+    deletePayment,
+    getAllPayments,
+    getMyPayments,
+    getPaymentById,
+    getPaymentsByUserId,
+    updatePayment,
 } from '../controllers/paymentController';
 import {authenticate} from '../middleware/authMiddleware';
 import {checkPermission, requireRole} from '../middleware/rbacMiddleware';
