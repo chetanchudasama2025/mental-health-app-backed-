@@ -14,11 +14,6 @@ const PORT = process.env.PORT || 3000;
 
 const httpServer = createServer(app);
 
-connectDatabase();
-
-// cronScheduler.start();
-// sessionReminderScheduler.start();
-
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
@@ -33,9 +28,23 @@ app.get('/health', (_req: express.Request, res: express.Response) => {
 
 app.use(errorHandler);
 
-httpServer.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+const startServer = async (): Promise<void> => {
+    try {
+        await connectDatabase();
+
+        // cronScheduler.start();
+        // sessionReminderScheduler.start();
+
+        httpServer.listen(PORT, () => {
+            console.log(`Server is running on port ${PORT}`);
+        });
+    } catch (error) {
+        console.error('Failed to start server:', error);
+        process.exit(1);
+    }
+};
+
+startServer();
 
 export default app;
 
