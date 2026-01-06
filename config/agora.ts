@@ -15,13 +15,10 @@ export const isAgoraConfigured = (): boolean => {
 /**
  * Generate Agora RTM token for real-time messaging
  * @param userId - User ID (must be string, max 64 characters)
- * @param expireTimeInSeconds - Token expiration time in seconds (default: 24 hours)
+ * @param expireTimeInSeconds - Token expiration time in seconds (default: 24 hours = 86400 seconds)
  * @returns RTM token string
  */
-export const generateRtmToken = (
-    userId: string,
-    expireTimeInSeconds: number = 86400
-): string => {
+export const generateRtmToken = (userId: string, expireTimeInSeconds: number = 86400): string => {
     if (!isAgoraConfigured()) {
         throw new Error(
             'Agora is not configured. Please set AGORA_APP_ID and AGORA_APP_CERTIFICATE environment variables.'
@@ -30,11 +27,14 @@ export const generateRtmToken = (
 
     const uid = String(userId).substring(0, 64);
 
+    const currentTimestamp = Math.floor(Date.now() / 1000);
+    const expireTimestamp = currentTimestamp + expireTimeInSeconds;
+
     const token = RtmTokenBuilder.buildToken(
         agoraConfig.appId,
         agoraConfig.appCertificate,
         uid,
-        expireTimeInSeconds
+        expireTimestamp
     );
 
     return token;

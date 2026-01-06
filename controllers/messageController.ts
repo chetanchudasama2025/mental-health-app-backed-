@@ -3,8 +3,10 @@ import mongoose from 'mongoose';
 import {Conversation} from '../models/Conversation';
 import {Message} from '../models/Message';
 import {User} from '../models/User';
+import Therapist from '../models/Therapist';
 import {CustomError} from '../middleware/errorHandler';
 import {AuthRequest} from '../middleware/authMiddleware';
+import {typingIndicatorStore} from '../utils/typingIndicatorStore';
 
 // Get or create a conversation between two users
 export const getOrCreateConversation = async (
@@ -104,14 +106,25 @@ export const getUserConversations = async (
             participants: currentUserId,
             deletedAt: null,
         })
-            .populate('participants', 'firstName lastName email role profilePhoto isOnline lastSeen')
+            .populate({
+                path: 'participants',
+                select: 'firstName lastName email role profilePhoto isOnline lastSeen therapist',
+                populate: {
+                    path: 'therapist',
+                    select: 'profilePhoto',
+                },
+            })
             .populate({
                 path: 'lastMessage',
                 select: 'content sender createdAt readBy readAt',
                 populate: [
                     {
                         path: 'sender',
-                        select: 'firstName lastName profilePhoto',
+                        select: 'firstName lastName profilePhoto therapist',
+                        populate: {
+                            path: 'therapist',
+                            select: 'profilePhoto',
+                        },
                     },
                     {
                         path: 'readBy',
@@ -123,11 +136,46 @@ export const getUserConversations = async (
             .skip(skip)
             .limit(limitNum);
 
-        const formattedConversations = conversations.map((conv) => {
+        const getProfilePhoto = async (participant: any): Promise<string | null> => {
+            if (!participant) return null;
+
+            if (participant.role === 'therapist') {
+                if (participant.therapist && typeof participant.therapist === 'object' && participant.therapist.profilePhoto) {
+                    return participant.therapist.profilePhoto;
+                }
+                const therapist = await Therapist.findOne({
+                    user: participant._id,
+                    deletedAt: null
+                }).select('profilePhoto').lean();
+                if (therapist?.profilePhoto) {
+                    return therapist.profilePhoto;
+                }
+            }
+
+            return participant.profilePhoto || null;
+        };
+
+        const formattedConversations = await Promise.all(conversations.map(async (conv) => {
             const otherParticipant = conv.participants.find(
-                (p: any) => p._id.toString() !== currentUserId
+                (p: any) => p._id.toString() !== currentUserId.toString()
             ) as any;
             const unreadCount = conv.unreadCounts.get(currentUserId) || 0;
+
+            const profilePhoto = await getProfilePhoto(otherParticipant);
+
+            let lastMessage = conv.lastMessage;
+            if (lastMessage && typeof lastMessage === 'object' && 'sender' in lastMessage && lastMessage.sender) {
+                const senderProfilePhoto = await getProfilePhoto(lastMessage.sender as any);
+                if (senderProfilePhoto) {
+                    lastMessage = {
+                        ...(lastMessage as any).toObject(),
+                        sender: {
+                            ...(lastMessage.sender as any).toObject(),
+                            profilePhoto: senderProfilePhoto,
+                        },
+                    };
+                }
+            }
 
             return {
                 _id: conv._id,
@@ -137,15 +185,15 @@ export const getUserConversations = async (
                     lastName: otherParticipant?.lastName,
                     email: otherParticipant?.email,
                     role: otherParticipant?.role,
-                    profilePhoto: otherParticipant?.profilePhoto,
+                    profilePhoto: profilePhoto,
                 },
-                lastMessage: conv.lastMessage,
+                lastMessage: lastMessage,
                 lastMessageAt: conv.lastMessageAt,
                 unreadCount,
                 createdAt: conv.createdAt,
                 updatedAt: conv.updatedAt,
             };
-        });
+        }));
 
         const total = await Conversation.countDocuments({
             participants: currentUserId,
@@ -189,13 +237,24 @@ export const getConversationById = async (
             participants: currentUserId,
             deletedAt: null,
         })
-            .populate('participants', 'firstName lastName email role profilePhoto isOnline lastSeen')
+            .populate({
+                path: 'participants',
+                select: 'firstName lastName email role profilePhoto isOnline lastSeen therapist',
+                populate: {
+                    path: 'therapist',
+                    select: 'profilePhoto',
+                },
+            })
             .populate({
                 path: 'lastMessage',
                 populate: [
                     {
                         path: 'sender',
-                        select: 'firstName lastName profilePhoto',
+                        select: 'firstName lastName profilePhoto therapist',
+                        populate: {
+                            path: 'therapist',
+                            select: 'profilePhoto',
+                        },
                     },
                     {
                         path: 'readBy',
@@ -211,9 +270,30 @@ export const getConversationById = async (
         }
 
         const otherParticipant = conversation.participants.find(
-            (p: any) => p._id.toString() !== currentUserId
+            (p: any) => p._id.toString() !== currentUserId.toString()
         ) as any;
         const unreadCount = conversation.unreadCounts.get(currentUserId) || 0;
+
+        const getProfilePhoto = async (participant: any): Promise<string | null> => {
+            if (!participant) return null;
+
+            if (participant.role === 'therapist') {
+                if (participant.therapist && typeof participant.therapist === 'object' && participant.therapist.profilePhoto) {
+                    return participant.therapist.profilePhoto;
+                }
+                const therapist = await Therapist.findOne({
+                    user: participant._id,
+                    deletedAt: null
+                }).select('profilePhoto').lean();
+                if (therapist?.profilePhoto) {
+                    return therapist.profilePhoto;
+                }
+            }
+
+            return participant.profilePhoto || null;
+        };
+
+        const profilePhoto = await getProfilePhoto(otherParticipant);
 
         res.status(200).json({
             success: true,
@@ -226,7 +306,7 @@ export const getConversationById = async (
                     lastName: otherParticipant?.lastName,
                     email: otherParticipant?.email,
                     role: otherParticipant?.role,
-                    profilePhoto: otherParticipant?.profilePhoto,
+                    profilePhoto: profilePhoto,
                 },
                 unreadCount,
             },
@@ -269,18 +349,33 @@ export const getConversationMessages = async (
         const limitNum = parseInt(limit as string, 10);
         const skip = (pageNum - 1) * limitNum;
 
+        const currentUserIdObj = new mongoose.Types.ObjectId(currentUserId);
         const messages = await Message.find({
             conversation: id,
-            deletedAt: null,
+            $or: [
+                {deletedFor: {$exists: false}},
+                {deletedFor: {$nin: [currentUserIdObj]}},
+            ],
         })
-            .populate('sender', 'firstName lastName email role profilePhoto')
+            .populate({
+                path: 'sender',
+                select: 'firstName lastName email role profilePhoto therapist',
+                populate: {
+                    path: 'therapist',
+                    select: 'profilePhoto',
+                },
+            })
             .populate('readBy', 'firstName lastName')
             .populate({
                 path: 'replyTo',
                 select: 'content sender attachmentUrl createdAt',
                 populate: {
                     path: 'sender',
-                    select: 'firstName lastName profilePhoto',
+                    select: 'firstName lastName profilePhoto therapist',
+                    populate: {
+                        path: 'therapist',
+                        select: 'profilePhoto',
+                    },
                 },
             })
             .sort({createdAt: -1})
@@ -288,17 +383,51 @@ export const getConversationMessages = async (
             .limit(limitNum)
             .lean();
 
-        messages.reverse();
+        const getProfilePhoto = async (participant: any): Promise<string | null> => {
+            if (!participant) return null;
+
+            if (participant.role === 'therapist') {
+                if (participant.therapist && typeof participant.therapist === 'object' && participant.therapist.profilePhoto) {
+                    return participant.therapist.profilePhoto;
+                }
+                const therapist = await Therapist.findOne({
+                    user: participant._id,
+                    deletedAt: null
+                }).select('profilePhoto').lean();
+                if (therapist?.profilePhoto) {
+                    return therapist.profilePhoto;
+                }
+            }
+
+            return participant.profilePhoto || null;
+        };
+
+        const messagesWithProfilePhotos = await Promise.all(messages.map(async (message: any) => {
+            if (message.sender) {
+                const senderProfilePhoto = await getProfilePhoto(message.sender);
+                message.sender.profilePhoto = senderProfilePhoto;
+            }
+            if (message.replyTo && message.replyTo.sender) {
+                const replySenderProfilePhoto = await getProfilePhoto(message.replyTo.sender);
+                message.replyTo.sender.profilePhoto = replySenderProfilePhoto;
+            }
+            return message;
+        }));
+
+        messagesWithProfilePhotos.reverse();
 
         const total = await Message.countDocuments({
             conversation: id,
-            deletedAt: null,
+            $or: [
+                {deletedFor: {$exists: false}},
+                {deletedFor: {$nin: [currentUserIdObj]}},
+            ],
         });
 
         res.status(200).json({
             success: true,
             message: 'Messages retrieved successfully',
-            data: messages,
+            data: messagesWithProfilePhotos,
             pagination: {
                 page: pageNum,
                 limit: limitNum,
@@ -390,19 +519,34 @@ export const uploadChatFile = async (
 
         const folderPath = `chat-messages/${conversationId}/${userFolderName}`;
 
-        const result = await uploadToCloudinary(file, folderPath);
+        try {
+            const result = await uploadToCloudinary(file, folderPath);
 
-        res.status(200).json({
-            success: true,
-            message: 'File uploaded successfully',
-            data: {
-                url: result.url,
-                publicId: result.publicId,
-                fileName: file.originalname,
-                fileType: file.mimetype,
-                fileSize: file.size,
-            },
-        });
+            if (!result || !result.url) {
+                const error: CustomError = new Error('File upload failed: No URL returned from Cloudinary');
+                error.statusCode = 500;
+                throw error;
+            }
+
+            res.status(200).json({
+                success: true,
+                message: 'File uploaded successfully',
+                data: {
+                    url: result.url,
+                    publicId: result.publicId,
+                    fileName: file.originalname,
+                    fileType: file.mimetype,
+                    fileSize: file.size,
+                },
+            });
+        } catch (uploadError: any) {
+            console.error('File upload error:', uploadError);
+            const error: CustomError = new Error(
+                uploadError.message || 'Failed to upload file. Please try again.'
+            );
+            error.statusCode = uploadError.statusCode || 500;
+            throw error;
+        }
     } catch (error) {
         next(error);
     }
@@ -451,11 +595,13 @@ export const sendMessage = async (
             messageContent = content.trim();
         } else if (attachmentUrl) {
             const urlLower = attachmentUrl.toLowerCase();
-            if (urlLower.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i) || urlLower.includes('/image/')) {
+            if (urlLower.match(/\.(jpg|jpeg|png|gif|webp|bmp|svg|ico)$/i) || urlLower.includes('/image/')) {
                 messageContent = '📷 Image';
-            } else if (urlLower.match(/\.(mp4|webm|ogg|mov|avi|wmv|flv|mkv)$/i) || urlLower.includes('/video/')) {
+            }
+            else if (urlLower.match(/\.(mp4|webm|ogg|mov|avi|wmv|flv|mkv|m4v|3gp)$/i) || urlLower.includes('/video/')) {
                 messageContent = '🎥 Video';
-            } else {
+            }
+            else {
                 messageContent = '📎 File';
             }
         }
@@ -502,16 +648,63 @@ export const sendMessage = async (
         await conversation.save();
 
         const populatedMessage = await Message.findById(message._id)
-            .populate('sender', 'firstName lastName email role profilePhoto')
+            .populate({
+                path: 'sender',
+                select: 'firstName lastName email role profilePhoto therapist',
+                populate: {
+                    path: 'therapist',
+                    select: 'profilePhoto',
+                },
+            })
             .populate('readBy', 'firstName lastName')
             .populate({
                 path: 'replyTo',
                 select: 'content sender attachmentUrl createdAt',
                 populate: {
                     path: 'sender',
-                    select: 'firstName lastName profilePhoto',
+                    select: 'firstName lastName profilePhoto therapist',
+                    populate: {
+                        path: 'therapist',
+                        select: 'profilePhoto',
+                    },
                 },
             });
+
+        const getProfilePhoto = async (participant: any): Promise<string | null> => {
+            if (!participant) return null;
+
+            if (participant.role === 'therapist') {
+                if (participant.therapist && typeof participant.therapist === 'object' && participant.therapist.profilePhoto) {
+                    return participant.therapist.profilePhoto;
+                }
+                const therapist = await Therapist.findOne({
+                    user: participant._id,
+                    deletedAt: null
+                }).select('profilePhoto').lean();
+                if (therapist?.profilePhoto) {
+                    return therapist.profilePhoto;
+                }
+            }
+
+            return participant.profilePhoto || null;
+        };
+
+        if (populatedMessage && populatedMessage.sender && typeof populatedMessage.sender === 'object' && 'profilePhoto' in populatedMessage.sender) {
+            const senderProfilePhoto = await getProfilePhoto(populatedMessage.sender as any);
+            if (senderProfilePhoto) {
+                (populatedMessage.sender as any).profilePhoto = senderProfilePhoto;
+            }
+        }
+
+        if (populatedMessage && populatedMessage.replyTo && typeof populatedMessage.replyTo === 'object' && 'sender' in populatedMessage.replyTo) {
+            const replyToSender = (populatedMessage.replyTo as any).sender;
+            if (replyToSender && typeof replyToSender === 'object') {
+                const replySenderProfilePhoto = await getProfilePhoto(replyToSender);
+                if (replySenderProfilePhoto) {
+                    replyToSender.profilePhoto = replySenderProfilePhoto;
+                }
+            }
+        }
 
         res.status(201).json({
             success: true,
@@ -591,17 +784,25 @@ export const markMessagesAsRead = async (
 };
 
 // Delete a message
-export const deleteMessage = async (
+// Edit a message
+export const editMessage = async (
     req: AuthRequest,
     res: Response,
     next: NextFunction
 ): Promise<void> => {
     try {
         const {id} = req.params;
+        const {content} = req.body;
         const currentUserId = req.user!._id;
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
             const error: CustomError = new Error('Invalid message ID');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        if (!content || !content.trim()) {
+            const error: CustomError = new Error('Content is required');
             error.statusCode = 400;
             throw error;
         }
@@ -613,18 +814,126 @@ export const deleteMessage = async (
         });
 
         if (!message) {
-            const error: CustomError = new Error('Message not found or you do not have permission to delete it');
+            const error: CustomError = new Error('Message not found or you do not have permission to edit it');
             error.statusCode = 404;
             throw error;
         }
 
-        message.deletedAt = new Date();
+        if (message.attachmentUrl) {
+            const error: CustomError = new Error('Messages with attachments cannot be edited');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const messageAge = Date.now() - new Date(message.createdAt).getTime();
+        const fifteenMinutes = 15 * 60 * 1000;
+        if (messageAge > fifteenMinutes) {
+            const error: CustomError = new Error('Message can only be edited within 15 minutes of sending');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        message.content = content.trim();
+        message.editedAt = new Date();
         await message.save();
+
+        await message.populate('sender', 'firstName lastName profilePhoto');
 
         res.status(200).json({
             success: true,
-            message: 'Message has been deleted successfully',
+            message: 'Message has been edited successfully',
+            data: message,
         });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const deleteMessage = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const {id} = req.params;
+        const {deleteForEveryone} = req.body;
+        const currentUserId = req.user!._id;
+
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            const error: CustomError = new Error('Invalid message ID');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const message = await Message.findById(id);
+
+        if (!message) {
+            const error: CustomError = new Error('Message not found');
+            error.statusCode = 404;
+            throw error;
+        }
+
+        if (message.deletedAt) {
+            const currentUserIdObj = new mongoose.Types.ObjectId(currentUserId);
+            if (!message.deletedFor || !message.deletedFor.some((id) => id.toString() === currentUserId.toString())) {
+                if (!message.deletedFor) {
+                    message.deletedFor = [];
+                }
+                message.deletedFor.push(currentUserIdObj);
+                await message.save();
+            }
+            res.status(200).json({
+                success: true,
+                message: 'Message has been deleted for you',
+            });
+            return;
+        }
+
+        if (deleteForEveryone === true) {
+            if (message.sender.toString() !== currentUserId.toString()) {
+                const error: CustomError = new Error('Only the sender can delete a message for everyone');
+                error.statusCode = 403;
+                throw error;
+            }
+
+            const messageAge = Date.now() - new Date(message.createdAt).getTime();
+            const sevenDays = 7 * 24 * 60 * 60 * 1000;
+            if (messageAge > sevenDays) {
+                const error: CustomError = new Error('Message can only be deleted for everyone within 7 days of sending');
+                error.statusCode = 400;
+                throw error;
+            }
+
+            message.deletedAt = new Date();
+            message.deletedFor = [];
+            await message.save();
+
+            res.status(200).json({
+                success: true,
+                message: 'Message has been deleted for everyone',
+            });
+        } else {
+            const conversation = await Conversation.findById(message.conversation);
+            if (!conversation || !conversation.participants.some((p) => p.toString() === currentUserId.toString())) {
+                const error: CustomError = new Error('You are not a participant in this conversation');
+                error.statusCode = 403;
+                throw error;
+            }
+
+            if (!message.deletedFor) {
+                message.deletedFor = [];
+            }
+            const currentUserIdObj = new mongoose.Types.ObjectId(currentUserId);
+            if (!message.deletedFor.some((id) => id.toString() === currentUserId.toString())) {
+                message.deletedFor.push(currentUserIdObj);
+                await message.save();
+            }
+
+            res.status(200).json({
+                success: true,
+                message: 'Message has been deleted for you',
+            });
+        }
     } catch (error) {
         next(error);
     }
@@ -664,6 +973,91 @@ export const deleteConversation = async (
         res.status(200).json({
             success: true,
             message: 'Conversation has been deleted successfully',
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Send typing indicator
+export const sendTypingIndicator = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const conversationId = req.params.id;
+        const currentUserId = req.user!._id.toString();
+        const {isTyping} = req.body;
+
+        if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+            const error: CustomError = new Error('Invalid conversation ID');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const conversation = await Conversation.findOne({
+            _id: conversationId,
+            participants: currentUserId,
+            deletedAt: null,
+        });
+
+        if (!conversation) {
+            const error: CustomError = new Error('Conversation not found');
+            error.statusCode = 404;
+            throw error;
+        }
+
+        if (isTyping) {
+            typingIndicatorStore.setTyping(conversationId, currentUserId);
+        } else {
+            typingIndicatorStore.removeTyping(conversationId, currentUserId);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Typing indicator updated',
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Get typing indicators for a conversation
+export const getTypingIndicators = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const conversationId = req.params.id;
+        const currentUserId = req.user!._id.toString();
+
+        if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+            const error: CustomError = new Error('Invalid conversation ID');
+            error.statusCode = 400;
+            throw error;
+        }
+
+        const conversation = await Conversation.findOne({
+            _id: conversationId,
+            participants: currentUserId,
+            deletedAt: null,
+        });
+
+        if (!conversation) {
+            const error: CustomError = new Error('Conversation not found');
+            error.statusCode = 404;
+            throw error;
+        }
+
+        const typingUsers = typingIndicatorStore.getTypingUsers(conversationId);
+
+        res.status(200).json({
+            success: true,
+            data: {
+                typingUsers: typingUsers.filter((userId) => userId !== currentUserId),
+            },
         });
     } catch (error) {
         next(error);

@@ -9,6 +9,8 @@ export interface IMessage extends Document {
     readBy: mongoose.Types.ObjectId[];
     readAt?: Date;
     deletedAt?: Date | null;
+    deletedFor?: mongoose.Types.ObjectId[];
+    editedAt?: Date | null;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -51,6 +53,16 @@ const MessageSchema = new Schema<IMessage>(
             default: null,
         },
         deletedAt: {
+            type: Date,
+            default: null,
+        },
+        deletedFor: [
+            {
+                type: Schema.Types.ObjectId,
+                ref: 'User',
+            },
+        ],
+        editedAt: {
             type: Date,
             default: null,
         },

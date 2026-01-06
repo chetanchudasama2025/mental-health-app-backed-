@@ -21,17 +21,15 @@ export const generateRtmTokenController = async (
                     isConfigured: false,
                 },
             });
+            return;
         }
 
         const userId = req.user!._id.toString();
-        const {expireTimeInSeconds} = req.body;
-
-        const expireTime = expireTimeInSeconds
-            ? Math.min(Math.max(parseInt(String(expireTimeInSeconds), 10), 60), 604800)
-            : 86400;
 
         try {
-            const token = generateRtmToken(userId, expireTime);
+            const expireTimeInSeconds = 86400; // 24 hours
+            const token = generateRtmToken(userId, expireTimeInSeconds);
+            const expiresAt = new Date(Date.now() + expireTimeInSeconds * 1000).toISOString();
 
             res.status(200).json({
                 success: true,
@@ -39,8 +37,8 @@ export const generateRtmTokenController = async (
                 data: {
                     token,
                     userId,
-                    expireTimeInSeconds: expireTime,
-                    expiresAt: new Date(Date.now() + expireTime * 1000).toISOString(),
+                    expireTimeInSeconds,
+                    expiresAt,
                     isConfigured: true,
                 },
             });

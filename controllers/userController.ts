@@ -49,7 +49,6 @@ export const createUser = async (
             throw error;
         }
 
-        // Check if user already exists
         const existingUser = await User.findOne({email: email.toLowerCase()});
         if (existingUser) {
             const error: CustomError = new Error('User with this email already exists');
@@ -57,11 +56,9 @@ export const createUser = async (
             throw error;
         }
 
-        // Hash password
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-        // Handle profile photo upload
         let profilePhotoUrl = null;
         const files = (req as any).files;
         if (files && files.profilePhoto && files.profilePhoto[0]) {
@@ -71,7 +68,6 @@ export const createUser = async (
             profilePhotoUrl = uploadResult.url;
         }
 
-        // Create user
         const user = new User({
             firstName,
             lastName,
@@ -97,7 +93,6 @@ export const createUser = async (
 
         await user.save();
 
-        // If role is therapist, create therapist profile
         if (role === 'therapist') {
             const therapist = new Therapist({
                 user: user._id,
@@ -295,7 +290,6 @@ export const updateUser = async (
             throw error;
         }
 
-        // Users can only update themselves unless they're admin
         if (id !== currentUserId.toString() && currentUserRole !== 'admin' && currentUserRole !== 'superAdmin') {
             const error: CustomError = new Error('You do not have permission to update this user');
             error.statusCode = 403;
@@ -321,12 +315,10 @@ export const updateUser = async (
             status,
         } = req.body;
 
-        // Handle profile photo upload
         const files = (req as any).files;
         if (files && files.profilePhoto && files.profilePhoto[0]) {
             const profilePhotoFile = files.profilePhoto[0];
 
-            // Delete old profile photo if exists
             if (user.profilePhoto) {
                 try {
                     await deleteFromCloudinaryByUrl(user.profilePhoto);
@@ -344,7 +336,6 @@ export const updateUser = async (
             user.profilePhoto = uploadResult.url;
         }
 
-        // Update fields
         if (firstName) user.firstName = firstName;
         if (lastName) user.lastName = lastName;
         if (phone) {
@@ -357,7 +348,6 @@ export const updateUser = async (
         if (country) user.country = country;
         if (timezone) user.timezone = timezone;
 
-        // Only admins can update status
         if (status && (currentUserRole === 'admin' || currentUserRole === 'superAdmin')) {
             user.status = status;
         }
@@ -402,7 +392,6 @@ export const deleteUser = async (
             throw error;
         }
 
-        // Prevent self-deletion
         if (id === currentUserId.toString()) {
             const error: CustomError = new Error('You cannot delete your own account');
             error.statusCode = 400;
@@ -417,7 +406,6 @@ export const deleteUser = async (
             throw error;
         }
 
-        // Soft delete
         user.deletedAt = new Date();
         await user.save();
 
@@ -454,7 +442,6 @@ export const setUserPassword = async (
         try {
             password = decrypt(passwordInput);
         } catch (decryptError) {
-            // If decryption fails, assume it's plain text
             password = passwordInput;
         }
 
@@ -470,7 +457,6 @@ export const setUserPassword = async (
             throw error;
         }
 
-        // Find the user
         const user = await User.findOne({_id: id, deletedAt: null});
 
         if (!user) {
@@ -479,14 +465,12 @@ export const setUserPassword = async (
             throw error;
         }
 
-        // Check if password already exists
         if (user.password && typeof user.password === 'string' && user.password.length > 0) {
             const error: CustomError = new Error('User already has a password set. Cannot set password for users with existing password.');
             error.statusCode = 400;
             throw error;
         }
 
-        // Hash and set the password
         const saltRounds = 10;
         const hashedPassword = await bcrypt.hash(password.trim(), saltRounds);
 

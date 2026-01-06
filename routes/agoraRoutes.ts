@@ -9,7 +9,6 @@ import {
 const agoraRouter = Router();
 
 agoraRouter.get('/config', authenticate, getAgoraConfig);
-
 agoraRouter.post(
     '/rtm-token',
     authenticate,

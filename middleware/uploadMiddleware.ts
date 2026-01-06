@@ -98,35 +98,76 @@ export const uploadToCloudinary = (
             }
             : {};
 
-    return new Promise((resolve, reject) => {
-        const uploadStream = cloudinary.uploader.upload_stream(
-            {
-                folder: completeFolder,
-                resource_type: resourceType,
-                transformation: options?.transformation || defaultTransformations,
-                overwrite: options?.overwrite ?? false,
-                invalidate: options?.invalidate ?? true,
-                use_filename: false,
-                unique_filename: true,
-            },
-            (error: any, result: any) => {
-                if (error) {
-                    reject(error);
-                } else if (result) {
-                    resolve({
-                        url: result.secure_url,
-                        publicId: result.public_id,
-                    });
-                } else {
-                    reject(new Error('Upload failed: No result from Cloudinary'));
-                }
-            }
-        );
+    const uploadOptions: any = {
+        resource_type: resourceType,
+        transformation: options?.transformation || defaultTransformations,
+        overwrite: options?.overwrite ?? false,
+        invalidate: options?.invalidate ?? true,
+        access_mode: 'public',
+    };
 
-        const stream = new Readable();
-        stream.push(file.buffer);
-        stream.push(null);
-        stream.pipe(uploadStream);
+    if (resourceType === 'raw' && file.originalname) {
+        const originalName = file.originalname;
+        const lastDotIndex = originalName.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+            const nameWithoutExt = originalName.substring(0, lastDotIndex);
+            const extension = originalName.substring(lastDotIndex);
+            const sanitizedName = nameWithoutExt
+                .replace(/[^a-zA-Z0-9_-]/g, '_')
+                .substring(0, 30);
+
+            const timestamp = Date.now();
+            const randomSuffix = Math.random().toString(36).substring(2, 6); // 4-char random suffix
+
+            uploadOptions.public_id = `${completeFolder}/${sanitizedName}_${timestamp}_${randomSuffix}${extension}`;
+        } else {
+            uploadOptions.folder = completeFolder;
+            uploadOptions.use_filename = false;
+            uploadOptions.unique_filename = true;
+        }
+    } else {
+        uploadOptions.folder = completeFolder;
+        uploadOptions.use_filename = false;
+        uploadOptions.unique_filename = true;
+    }
+
+    return new Promise((resolve, reject) => {
+        try {
+            const uploadStream = cloudinary.uploader.upload_stream(
+                uploadOptions,
+                (error: any, result: any) => {
+                    if (error) {
+                        console.error('Cloudinary upload error:', error);
+                        reject(new Error(`File upload failed: ${error.message || 'Unknown error'}`));
+                    } else if (result) {
+                        resolve({
+                            url: result.secure_url,
+                            publicId: result.public_id,
+                        });
+                    } else {
+                        reject(new Error('Upload failed: No result from Cloudinary'));
+                    }
+                }
+            );
+
+            const stream = new Readable();
+            stream.push(file.buffer);
+            stream.push(null);
+            stream.pipe(uploadStream);
+
+            stream.on('error', (error) => {
+                console.error('Stream error:', error);
+                reject(new Error(`File stream error: ${error.message}`));
+            });
+
+            uploadStream.on('error', (error: any) => {
+                console.error('Upload stream error:', error);
+                reject(new Error(`Upload stream error: ${error.message || 'Unknown error'}`));
+            });
+        } catch (error: any) {
+            console.error('Upload setup error:', error);
+            reject(new Error(`Failed to setup upload: ${error.message || 'Unknown error'}`));
+        }
     });
 };
 

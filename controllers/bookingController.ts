@@ -94,7 +94,7 @@ export const processPaymentAndCreateBooking = async (
 
         let billingDetails: any = null;
         let shippingDetails: any = null;
-        
+
         if (address) {
             const addressDetails = {
                 line1: address.line1,
@@ -490,7 +490,7 @@ export const getBookingById = async (
         }
 
         const booking = await Booking.findById(id)
-            .populate('therapist', 'firstName lastName email profilePhoto bio specializations')
+            .populate('therapist')
             .populate('patient', 'firstName lastName email')
             .populate('payment');
 
@@ -626,8 +626,7 @@ export const getMyBookings = async (
 
         const bookings = await Booking.find(filter)
             .populate(
-                'therapist',
-                'firstName lastName email profilePhoto bio specializations'
+                'therapist'
             )
             .populate('payment')
             .sort({date: -1})
@@ -716,7 +715,7 @@ export const getPastTherapists = async (
                 }
             ]
         })
-            .populate('therapist', 'firstName lastName email profilePhotoUrl bio specializations languages certifications education')
+            .populate('therapist')
             .sort({date: -1, time: -1})
             .lean();
 

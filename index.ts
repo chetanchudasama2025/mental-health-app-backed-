@@ -10,7 +10,7 @@ import {connectDatabase} from './config/database';
 dotenv.config();
 
 const app: Application = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
 
 const httpServer = createServer(app);
 
@@ -35,7 +35,7 @@ const startServer = async (): Promise<void> => {
         // cronScheduler.start();
         // sessionReminderScheduler.start();
 
-        httpServer.listen(PORT, () => {
+        httpServer.listen(PORT, '0.0.0.0', () => {
             console.log(`Server is running on port ${PORT}`);
         });
     } catch (error) {

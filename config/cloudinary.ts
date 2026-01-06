@@ -37,6 +37,9 @@ export const isCloudinaryConfigured = (): boolean => {
  */
 export const buildFolderPath = (folderPath: string): string => {
     const normalized = folderPath.replace(/^\/+|\/+$/g, '');
+    if (normalized.startsWith(CLOUDINARY_BASE_FOLDER + '/')) {
+        return normalized;
+    }
     return `${CLOUDINARY_BASE_FOLDER}/${normalized}`;
 };
 

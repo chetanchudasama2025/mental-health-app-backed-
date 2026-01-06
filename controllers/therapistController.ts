@@ -682,7 +682,7 @@ export const updateTherapist = async (
                         error.statusCode = 400;
                         throw error;
                     }
-                    updateData[field as keyof ITherapist] = parsed;
+                    (updateData as any)[field] = parsed;
                 } else if (field === 'education' || field === 'certifications' || field === 'experience') {
                     if (!updateData[field as keyof ITherapist]) {
                         const parsed = parseJsonField(req.body[field], field);
@@ -691,7 +691,7 @@ export const updateTherapist = async (
                             error.statusCode = 400;
                             throw error;
                         }
-                        updateData[field as keyof ITherapist] = parsed;
+                        (updateData as any)[field] = parsed;
                     }
                 } else if (field === 'dateOfBirth') {
                     if (req.body[field]) {
@@ -704,7 +704,7 @@ export const updateTherapist = async (
                         updateData[field] = date;
                     }
                 } else {
-                    updateData[field as keyof ITherapist] = req.body[field];
+                    (updateData as any)[field] = req.body[field];
                 }
             }
         }
